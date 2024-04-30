@@ -1,9 +1,8 @@
-mod defaults;
+mod util;
 mod core;
 mod app;
 
 fn main() {
-    defaults::init_defaults();
-    let f = unsafe { &defaults::DEFAULT_PATHS.Appdata };
+    let f = util::get_gsx_profile_path();
     println!("{}", f);
 }
