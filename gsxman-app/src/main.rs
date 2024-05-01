@@ -2,7 +2,11 @@ mod util;
 mod core;
 mod app;
 
-fn main() {
-    let f = util::get_gsx_profile_path();
-    println!("{}", f);
+fn main() -> Result<(), eframe::Error> {
+    let config = app::AppConfig {
+        msfs_windowsstore: false,
+        paths: Default::default()
+   };
+
+   app::start_app(&config)
 }
