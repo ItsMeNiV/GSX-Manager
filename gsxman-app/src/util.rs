@@ -1,12 +1,12 @@
 extern crate directories;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use directories::BaseDirs;
 
 const GSX_PATH: &str = r"virtuali\GSX\MSFS";
-pub fn get_gsx_profile_path() -> String {
+pub fn get_gsx_profile_path() -> PathBuf {
     let path = get_appdata_path() + r"\" + GSX_PATH;
-    String::from(Path::new(path.as_str()).to_str().unwrap())
+    Path::new(path.as_str()).to_owned()
 }
 
 fn get_appdata_path() -> String {
