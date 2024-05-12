@@ -22,3 +22,8 @@ impl ConfigFile<'_> {
         ConfigFile {file_name: filename, file_location: filelocation, airport: airportref}
     }
 }
+
+pub mod constants {
+    use egui::Vec2;
+    pub static WINDOW_SIZE: Vec2 = Vec2 {x: 1200.0, y: 500.0};
+}
