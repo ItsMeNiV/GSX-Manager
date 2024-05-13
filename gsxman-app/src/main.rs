@@ -1,22 +1,19 @@
-use std::{collections::HashMap, io};
-use core::Airport;
-
 use app::AppConfig;
+use tracing::{error, subscriber, Level};
+use tracing_subscriber::FmtSubscriber;
 
-mod util;
-mod core;
 mod app;
+mod core;
+mod util;
 
 fn main() -> Result<(), eframe::Error> {
-    let airport_data: HashMap<String, Airport> = core::filehandler::get_airport_data();
-    let owned_config_files = core::filehandler::get_installed_gsx_profiles(&airport_data);
-
-    for config in owned_config_files {
-        println!("{:?}", config);
-    }
+    let subscriber = FmtSubscriber::builder().with_max_level(Level::WARN).finish();
+    tracing::subscriber::set_global_default(subscriber).expect("Failed setting global Logging Subscriber");
 
     let app_config: AppConfig = Default::default();
-    app::start_app(&app_config)?;
+    if let Err(error) = app::start_app(app_config) {
+        error!("{}", error.to_string());
+    }
 
     Ok(())
 }
