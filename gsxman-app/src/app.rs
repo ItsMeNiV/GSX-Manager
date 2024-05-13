@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use crate::core as GsxmanCore;
-use GsxmanCore::{constants, Airport, ConfigFile};
 use eframe::egui;
 use egui::{Context, Style, Visuals};
+use std::collections::HashMap;
 use walkers::{sources, MapMemory, Tiles};
+use GsxmanCore::{constants, Airport, ProfileFile};
 
 use self::ui::ClickWatcher;
 
@@ -19,10 +19,10 @@ struct GsxmanApp {
     app_config: AppConfig,
     tiles: Tiles,
     map_memory: MapMemory,
-    installed_gsx_profiles: Vec<ConfigFile>,
+    installed_gsx_profiles: Vec<ProfileFile>,
     airport_data: HashMap<String, Airport>,
     click_watcher: ui::ClickWatcher,
-    selected_profile: Option<ConfigFile>
+    selected_profile: Option<ProfileFile>,
 }
 
 impl Default for AppConfig {
@@ -41,15 +41,18 @@ impl GsxmanApp {
             app_config,
             tiles: Tiles::new(sources::OpenStreetMap, egui_ctx),
             map_memory: MapMemory::default(),
-            installed_gsx_profiles: GsxmanCore::filehandler::get_installed_gsx_profiles(&airport_data),
+            installed_gsx_profiles: GsxmanCore::filehandler::get_installed_gsx_profiles(
+                &airport_data,
+            ),
             airport_data,
             click_watcher: ClickWatcher::default(),
-            selected_profile: None
+            selected_profile: None,
         }
     }
 
     fn update_installed_gsx_profiles(&mut self) {
-        self.installed_gsx_profiles = GsxmanCore::filehandler::get_installed_gsx_profiles(&self.airport_data);
+        self.installed_gsx_profiles =
+            GsxmanCore::filehandler::get_installed_gsx_profiles(&self.airport_data);
     }
 }
 

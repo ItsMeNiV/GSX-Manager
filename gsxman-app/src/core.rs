@@ -11,15 +11,15 @@ pub struct Airport {
 }
 
 #[derive(Debug, Clone)]
-pub struct ConfigFile {
+pub struct ProfileFile {
     pub file_name: String,
     pub file_location: PathBuf,
     pub airport: Airport,
 }
 
-impl ConfigFile {
-    pub fn new(filename: String, filelocation: PathBuf, airportref: Airport) -> ConfigFile {
-        ConfigFile {
+impl ProfileFile {
+    pub fn new(filename: String, filelocation: PathBuf, airportref: Airport) -> ProfileFile {
+        ProfileFile {
             file_name: filename,
             file_location: filelocation,
             airport: airportref,

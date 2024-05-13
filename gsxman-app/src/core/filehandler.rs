@@ -1,10 +1,9 @@
+use super::{Airport, ProfileFile};
 use crate::util;
 use geoutils::Location;
 use regex::Regex;
-use tracing::{error, warn};
 use std::{collections::HashMap, fs, io, path::PathBuf};
-
-use super::{Airport, ConfigFile};
+use tracing::{error, warn};
 
 pub fn get_airport_data() -> HashMap<String, Airport> {
     let mut return_map = HashMap::new();
@@ -29,8 +28,8 @@ pub fn get_airport_data() -> HashMap<String, Airport> {
     return_map
 }
 
-pub fn get_installed_gsx_profiles(airport_data: &HashMap<String, Airport>) -> Vec<ConfigFile> {
-    let mut owned_config_files: Vec<ConfigFile> = Vec::new();
+pub fn get_installed_gsx_profiles(airport_data: &HashMap<String, Airport>) -> Vec<ProfileFile> {
+    let mut owned_config_files: Vec<ProfileFile> = Vec::new();
     let gsx_path = util::get_gsx_profile_path();
 
     let entries = fs::read_dir(gsx_path)
@@ -54,7 +53,7 @@ pub fn get_installed_gsx_profiles(airport_data: &HashMap<String, Airport>) -> Ve
             warn!("Airport with icao {} not found!", icao_code);
             continue;
         };
-        let config = ConfigFile::new(
+        let config = ProfileFile::new(
             String::from(path_entry.file_name().unwrap().to_str().unwrap()),
             path_entry,
             airport.to_owned().clone(),
@@ -67,20 +66,25 @@ pub fn get_installed_gsx_profiles(airport_data: &HashMap<String, Airport>) -> Ve
 
 pub fn import_config_file_dialog() {
     if let Some(path) = rfd::FileDialog::new()
-    .add_filter("GSX-Profile", &["ini"])
-    .set_directory("/")
-    .pick_file() {
-        let to_path = util::get_gsx_profile_path().join( path.file_name().unwrap());
+        .add_filter("GSX-Profile", &["ini"])
+        .set_directory("/")
+        .pick_file()
+    {
+        let to_path = util::get_gsx_profile_path().join(path.file_name().unwrap());
         match fs::copy(path, to_path) {
-            Ok(_) => {},
-            Err(error) => {error!("{:?}", error)}
+            Ok(_) => {}
+            Err(error) => {
+                error!("{:?}", error)
+            }
         }
     }
 }
 
 pub fn delete_config_file(airport_path_to_delete: &PathBuf) {
     match fs::remove_file(airport_path_to_delete) {
-        Ok(_) => {},
-        Err(error) => {error!("{}", error)}
+        Ok(_) => {}
+        Err(error) => {
+            error!("{}", error)
+        }
     }
 }

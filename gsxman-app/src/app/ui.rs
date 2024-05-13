@@ -1,28 +1,34 @@
+use super::GsxmanApp;
+use crate::core::{constants, filehandler, Airport};
 use egui::{menu, Color32, Id, Ui};
 use egui_extras::{Column, TableBuilder};
 use tracing::error;
 use walkers::{
-    extras::{Place, Places, Style}, Map, Plugin, Position
+    extras::{Place, Places, Style},
+    Map, Plugin, Position,
 };
-use crate::core::{constants, Airport, filehandler};
-use super::GsxmanApp;
 
 #[derive(Default)]
 pub struct ClickWatcher {
-    pub clicked_airport: Option<Airport>
+    pub clicked_airport: Option<Airport>,
 }
 
 impl Plugin for &mut ClickWatcher {
-    fn run(&mut self, response: &egui::Response, painter: egui::Painter, projector: &walkers::Projector) {
-        let click_position = if !response.changed() && response.clicked_by(egui::PointerButton::Primary) {
-            response.interact_pointer_pos()
-        } else {
-            None
-        };
+    fn run(
+        &mut self,
+        response: &egui::Response,
+        painter: egui::Painter,
+        projector: &walkers::Projector,
+    ) {
+        let click_position =
+            if !response.changed() && response.clicked_by(egui::PointerButton::Primary) {
+                response.interact_pointer_pos()
+            } else {
+                None
+            };
 
         if let Some(position) = click_position {
             error!("{:?}", position);
-            
         }
     }
 }
@@ -87,10 +93,11 @@ impl GsxmanApp {
             .column(Column::remainder().clip(false))
             .column(Column::remainder().clip(false))
             .column(Column::remainder().clip(false));
-            
-            table = table.sense(egui::Sense::click());
 
-            table.header(20.0, |mut header| {
+        table = table.sense(egui::Sense::click());
+
+        table
+            .header(20.0, |mut header| {
                 header.col(|ui| {
                     ui.heading("ICAO");
                 });
@@ -104,7 +111,6 @@ impl GsxmanApp {
             .body(|mut body| {
                 for profile in &self.installed_gsx_profiles {
                     body.row(30.0, |mut row| {
-
                         if let Some(selected_profile) = &self.selected_profile {
                             row.set_selected(selected_profile.airport.icao == profile.airport.icao);
                         }
@@ -141,7 +147,7 @@ impl GsxmanApp {
                 filehandler::import_config_file_dialog();
                 self.update_installed_gsx_profiles();
             }
-    
+
             ui.add_enabled_ui(self.selected_profile.is_some(), |ui| {
                 if ui.button("Delete selected Profile").clicked() {
                     let file_location = &self.selected_profile.clone().unwrap().file_location;
@@ -167,8 +173,7 @@ impl eframe::App for GsxmanApp {
             ..Default::default()
         };
 
-        egui::TopBottomPanel::top(Id::new("top_panel"))
-        .show(ctx, |ui| {
+        egui::TopBottomPanel::top(Id::new("top_panel")).show(ctx, |ui| {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 ui.horizontal(|ui| {
                     self.update_menu_bar_panel(ui);
