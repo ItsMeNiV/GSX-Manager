@@ -22,7 +22,7 @@ struct GsxmanApp {
     installed_gsx_profiles: Vec<ConfigFile>,
     airport_data: HashMap<String, Airport>,
     click_watcher: ui::ClickWatcher,
-    selected_airport: Option<Airport>
+    selected_profile: Option<ConfigFile>
 }
 
 impl Default for AppConfig {
@@ -44,8 +44,12 @@ impl GsxmanApp {
             installed_gsx_profiles: GsxmanCore::filehandler::get_installed_gsx_profiles(&airport_data),
             airport_data,
             click_watcher: ClickWatcher::default(),
-            selected_airport: None
+            selected_profile: None
         }
+    }
+
+    fn update_installed_gsx_profiles(&mut self) {
+        self.installed_gsx_profiles = GsxmanCore::filehandler::get_installed_gsx_profiles(&self.airport_data);
     }
 }
 

@@ -1,10 +1,10 @@
-use egui::{Color32, Id, Ui};
+use egui::{menu, Color32, Id, Ui};
 use egui_extras::{Column, TableBuilder};
 use tracing::error;
 use walkers::{
     extras::{Place, Places, Style}, Map, Plugin, Position
 };
-use crate::core::{constants, Airport};
+use crate::core::{constants, Airport, filehandler};
 use super::GsxmanApp;
 
 #[derive(Default)]
@@ -40,8 +40,8 @@ impl GsxmanApp {
                     ),
                     symbol: '✈',
                     style: Style {
-                        label_background: if let Some(airport) = &self.selected_airport {
-                            if airport.icao == profile.airport.icao {
+                        label_background: if let Some(selected_profile) = &self.selected_profile {
+                            if selected_profile.airport.icao == profile.airport.icao {
                                 Color32::BLUE.gamma_multiply(0.8)
                             } else {
                                 Color32::BLACK.gamma_multiply(0.8)
@@ -49,8 +49,8 @@ impl GsxmanApp {
                         } else {
                             Color32::BLACK.gamma_multiply(0.8)
                         },
-                        symbol_background: if let Some(airport) = &self.selected_airport {
-                            if airport.icao == profile.airport.icao {
+                        symbol_background: if let Some(selected_profile) = &self.selected_profile {
+                            if selected_profile.airport.icao == profile.airport.icao {
                                 Color32::BLUE.gamma_multiply(0.8)
                             } else {
                                 Color32::WHITE.gamma_multiply(0.8)
@@ -105,8 +105,8 @@ impl GsxmanApp {
                 for profile in &self.installed_gsx_profiles {
                     body.row(30.0, |mut row| {
 
-                        if let Some(selected_airport) = &self.selected_airport {
-                            row.set_selected(selected_airport.icao == profile.airport.icao);
+                        if let Some(selected_profile) = &self.selected_profile {
+                            row.set_selected(selected_profile.airport.icao == profile.airport.icao);
                         }
 
                         row.col(|ui| {
@@ -120,19 +120,37 @@ impl GsxmanApp {
                         });
 
                         if row.response().clicked() {
-                            if let Some(selected_airport) = &self.selected_airport {
-                                if selected_airport.icao == profile.airport.icao {
-                                    self.selected_airport = None
+                            if let Some(selected_profile) = &self.selected_profile {
+                                if selected_profile.airport.icao == profile.airport.icao {
+                                    self.selected_profile = None
                                 } else {
-                                    self.selected_airport = Some(profile.airport.clone());
+                                    self.selected_profile = Some(profile.clone());
                                 }
                             } else {
-                                self.selected_airport = Some(profile.airport.clone());
+                                self.selected_profile = Some(profile.clone());
                             }
                         }
                     });
                 }
             });
+    }
+
+    fn update_menu_bar_panel(&mut self, ui: &mut Ui) {
+        menu::bar(ui, |ui| {
+            if ui.button("Import Profile").clicked() {
+                filehandler::import_config_file_dialog();
+                self.update_installed_gsx_profiles();
+            }
+    
+            ui.add_enabled_ui(self.selected_profile.is_some(), |ui| {
+                if ui.button("Delete selected Profile").clicked() {
+                    let file_location = &self.selected_profile.clone().unwrap().file_location;
+                    filehandler::delete_config_file(file_location);
+                    self.selected_profile = None;
+                    self.update_installed_gsx_profiles();
+                }
+            });
+        });
     }
 }
 
@@ -148,6 +166,15 @@ impl eframe::App for GsxmanApp {
             fill: ctx.style().visuals.panel_fill,
             ..Default::default()
         };
+
+        egui::TopBottomPanel::top(Id::new("top_panel"))
+        .show(ctx, |ui| {
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                ui.horizontal(|ui| {
+                    self.update_menu_bar_panel(ui);
+                });
+            });
+        });
 
         egui::SidePanel::left(Id::new("map_panel"))
             .frame(rimless)

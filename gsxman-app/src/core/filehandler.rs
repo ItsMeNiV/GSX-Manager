@@ -1,8 +1,8 @@
 use crate::util;
 use geoutils::Location;
 use regex::Regex;
-use tracing::warn;
-use std::{collections::HashMap, fs, io};
+use tracing::{error, warn};
+use std::{collections::HashMap, fs, io, path::PathBuf};
 
 use super::{Airport, ConfigFile};
 
@@ -63,4 +63,24 @@ pub fn get_installed_gsx_profiles(airport_data: &HashMap<String, Airport>) -> Ve
     }
 
     owned_config_files
+}
+
+pub fn import_config_file_dialog() {
+    if let Some(path) = rfd::FileDialog::new()
+    .add_filter("GSX-Profile", &["ini"])
+    .set_directory("/")
+    .pick_file() {
+        let to_path = util::get_gsx_profile_path().join( path.file_name().unwrap());
+        match fs::copy(path, to_path) {
+            Ok(_) => {},
+            Err(error) => {error!("{:?}", error)}
+        }
+    }
+}
+
+pub fn delete_config_file(airport_path_to_delete: &PathBuf) {
+    match fs::remove_file(airport_path_to_delete) {
+        Ok(_) => {},
+        Err(error) => {error!("{}", error)}
+    }
 }

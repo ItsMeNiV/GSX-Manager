@@ -10,7 +10,7 @@ pub struct Airport {
     pub location: Location,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConfigFile {
     pub file_name: String,
     pub file_location: PathBuf,
