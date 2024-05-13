@@ -1,13 +1,31 @@
-use egui::{Id, Ui};
+use egui::{Color32, Id, Ui};
 use egui_extras::{Column, TableBuilder};
+use tracing::error;
 use walkers::{
-    extras::{Place, Places, Style},
-    Map, Position,
+    extras::{Place, Places, Style}, Map, Plugin, Position
 };
-
-use crate::core::constants;
-
+use crate::core::{constants, Airport};
 use super::GsxmanApp;
+
+#[derive(Default)]
+pub struct ClickWatcher {
+    pub clicked_airport: Option<Airport>
+}
+
+impl Plugin for &mut ClickWatcher {
+    fn run(&mut self, response: &egui::Response, painter: egui::Painter, projector: &walkers::Projector) {
+        let click_position = if !response.changed() && response.clicked_by(egui::PointerButton::Primary) {
+            response.interact_pointer_pos()
+        } else {
+            None
+        };
+
+        if let Some(position) = click_position {
+            error!("{:?}", position);
+            
+        }
+    }
+}
 
 impl GsxmanApp {
     fn update_map_panel(&mut self, ui: &mut Ui) {
@@ -21,7 +39,27 @@ impl GsxmanApp {
                         profile.airport.location.longitude(),
                     ),
                     symbol: '✈',
-                    style: Style::default(),
+                    style: Style {
+                        label_background: if let Some(airport) = &self.selected_airport {
+                            if airport.icao == profile.airport.icao {
+                                Color32::BLUE.gamma_multiply(0.8)
+                            } else {
+                                Color32::BLACK.gamma_multiply(0.8)
+                            }
+                        } else {
+                            Color32::BLACK.gamma_multiply(0.8)
+                        },
+                        symbol_background: if let Some(airport) = &self.selected_airport {
+                            if airport.icao == profile.airport.icao {
+                                Color32::BLUE.gamma_multiply(0.8)
+                            } else {
+                                Color32::WHITE.gamma_multiply(0.8)
+                            }
+                        } else {
+                            Color32::WHITE.gamma_multiply(0.8)
+                        },
+                        ..Default::default()
+                    },
                 })
                 .collect(),
         );
@@ -33,7 +71,8 @@ impl GsxmanApp {
                 Position::from_lat_lon(52.0, 0.0),
             )
             .zoom_gesture(true)
-            .with_plugin(places),
+            .with_plugin(places)
+            .with_plugin(&mut self.click_watcher),
         );
     }
 
@@ -65,6 +104,11 @@ impl GsxmanApp {
             .body(|mut body| {
                 for profile in &self.installed_gsx_profiles {
                     body.row(30.0, |mut row| {
+
+                        if let Some(selected_airport) = &self.selected_airport {
+                            row.set_selected(selected_airport.icao == profile.airport.icao);
+                        }
+
                         row.col(|ui| {
                             ui.label(profile.airport.icao.to_string());
                         });
@@ -74,6 +118,18 @@ impl GsxmanApp {
                         row.col(|ui| {
                             ui.label(profile.file_location.as_os_str().to_str().unwrap());
                         });
+
+                        if row.response().clicked() {
+                            if let Some(selected_airport) = &self.selected_airport {
+                                if selected_airport.icao == profile.airport.icao {
+                                    self.selected_airport = None
+                                } else {
+                                    self.selected_airport = Some(profile.airport.clone());
+                                }
+                            } else {
+                                self.selected_airport = Some(profile.airport.clone());
+                            }
+                        }
                     });
                 }
             });
@@ -96,7 +152,7 @@ impl eframe::App for GsxmanApp {
         egui::SidePanel::left(Id::new("map_panel"))
             .frame(rimless)
             .resizable(false)
-            .exact_width(content_width / 2.0)
+            .exact_width((content_width / 2.0) - 5.0)
             .show(ctx, |ui| {
                 self.update_map_panel(ui);
             });
@@ -104,7 +160,7 @@ impl eframe::App for GsxmanApp {
         egui::SidePanel::right(Id::new("configlist_panel"))
             .frame(rimless)
             .resizable(false)
-            .exact_width(content_width / 2.0)
+            .exact_width((content_width / 2.0) - 5.0)
             .show(ctx, |ui| {
                 self.update_table_panel(ui);
             });

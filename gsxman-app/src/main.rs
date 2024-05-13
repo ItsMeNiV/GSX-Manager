@@ -1,5 +1,5 @@
 use app::AppConfig;
-use tracing::{error, subscriber, Level};
+use tracing::{error, Level};
 use tracing_subscriber::FmtSubscriber;
 
 mod app;
