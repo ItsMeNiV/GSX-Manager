@@ -1,6 +1,6 @@
 use super::GsxmanApp;
-use crate::core::{constants, filehandler, Airport};
-use egui::{menu, Color32, Id, Ui};
+use crate::core::{constants, filehandler};
+use egui::{menu, Color32, Id, Margin, Pos2, Ui};
 use egui_extras::{Column, TableBuilder};
 use tracing::error;
 use walkers::{
@@ -8,9 +8,36 @@ use walkers::{
     Map, Plugin, Position,
 };
 
-#[derive(Default)]
 pub struct ClickWatcher {
-    pub clicked_airport: Option<Airport>,
+    pub places: Option<Vec<Place>>,
+    pub clicked_icao: Option<String>,
+    pub has_clicked: bool,
+}
+
+struct GsxPlace(Place);
+
+impl GsxPlace {
+    pub fn to_place(&self) -> Place {
+        Place {
+            position: self.0.position.clone(),
+            label: self.0.label.clone(),
+            symbol: self.0.symbol.clone(),
+            style: self.0.style.clone(),
+        }
+    }
+}
+
+impl Clone for GsxPlace {
+    fn clone(&self) -> Self {
+        Self {
+            0: Place {
+                position: self.0.position.clone(),
+                label: self.0.label.clone(),
+                symbol: self.0.symbol.clone(),
+                style: self.0.style.clone(),
+            },
+        }
+    }
 }
 
 impl Plugin for &mut ClickWatcher {
@@ -27,18 +54,34 @@ impl Plugin for &mut ClickWatcher {
                 None
             };
 
-        if let Some(position) = click_position {
-            error!("{:?}", position);
+        if let Some(click_pos) = click_position {
+            self.has_clicked = true;
+            self.clicked_icao = None;
+
+            if let Some(places) = &self.places {
+                places.iter().for_each(|p| {
+                    let airport_position = projector.project(p.position);
+                    let offset = 10.0;
+                    if click_pos.x > (airport_position.x - offset)
+                        && click_pos.x < (airport_position.x + offset)
+                        && click_pos.y > (airport_position.y - offset)
+                        && click_pos.y < (airport_position.y + offset)
+                    {
+                        self.clicked_icao = Some(p.label.to_owned());
+                    }
+                });
+            }
         }
     }
 }
 
 impl GsxmanApp {
     fn update_map_panel(&mut self, ui: &mut Ui) {
-        let places = Places::new(
-            self.installed_gsx_profiles
-                .iter()
-                .map(|profile| Place {
+        let places: Vec<GsxPlace> = self
+            .installed_gsx_profiles
+            .iter()
+            .map(|profile| {
+                GsxPlace(Place {
                     label: profile.airport.icao.to_owned(),
                     position: Position::from_lat_lon(
                         profile.airport.location.latitude(),
@@ -67,8 +110,29 @@ impl GsxmanApp {
                         ..Default::default()
                     },
                 })
-                .collect(),
-        );
+            })
+            .collect();
+
+        let places_copy: Vec<Place> = places.to_vec().iter().map(|p| p.to_place()).collect();
+        let places: Vec<Place> = places.iter().map(|p| p.to_place()).collect();
+
+        self.click_watcher.places = Some(places_copy);
+
+        let places = Places::new(places);
+
+        // Manual Zoom by Scrolling. Map Library only allows Zooming by holding Ctrl
+        let scroll_delta = ui.input(|i| i.raw_scroll_delta);
+        if scroll_delta.y > 0.0 {
+            match self.map_memory.zoom_in() {
+                Ok(_) => {}
+                Err(_) => {}
+            };
+        } else if scroll_delta.y < 0.0 {
+            match self.map_memory.zoom_out() {
+                Ok(_) => {}
+                Err(_) => {}
+            };
+        }
 
         ui.add(
             Map::new(
@@ -76,10 +140,24 @@ impl GsxmanApp {
                 &mut self.map_memory,
                 Position::from_lat_lon(52.0, 0.0),
             )
-            .zoom_gesture(true)
+            .zoom_gesture(false)
             .with_plugin(places)
             .with_plugin(&mut self.click_watcher),
         );
+
+        if self.click_watcher.has_clicked {
+            if let Some(clicked_icao) = &self.click_watcher.clicked_icao {
+                self.installed_gsx_profiles.iter().for_each(|p| {
+                    if clicked_icao.to_owned() == p.airport.icao {
+                        self.selected_profile = Some(p.clone());
+                    }
+                });
+            } else {
+                self.selected_profile = None;
+            }
+
+            self.click_watcher.has_clicked = false;
+        }
     }
 
     fn update_table_panel(&mut self, ui: &mut Ui) {
@@ -170,6 +248,7 @@ impl eframe::App for GsxmanApp {
 
         let rimless = egui::Frame {
             fill: ctx.style().visuals.panel_fill,
+            inner_margin: Margin::symmetric(5.0, 5.0),
             ..Default::default()
         };
 

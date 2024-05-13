@@ -45,7 +45,11 @@ impl GsxmanApp {
                 &airport_data,
             ),
             airport_data,
-            click_watcher: ClickWatcher::default(),
+            click_watcher: ClickWatcher {
+                places: None,
+                clicked_icao: None,
+                has_clicked: false,
+            },
             selected_profile: None,
         }
     }
