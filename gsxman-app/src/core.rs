@@ -15,14 +15,21 @@ pub struct ProfileFile {
     pub file_name: String,
     pub file_location: PathBuf,
     pub airport: Airport,
+    pub py_file_location: Option<PathBuf>,
 }
 
 impl ProfileFile {
-    pub fn new(filename: String, filelocation: PathBuf, airportref: Airport) -> ProfileFile {
+    pub fn new(
+        file_name: String,
+        file_location: PathBuf,
+        airport: Airport,
+        py_file_location: Option<PathBuf>,
+    ) -> ProfileFile {
         ProfileFile {
-            file_name: filename,
-            file_location: filelocation,
-            airport: airportref,
+            file_name,
+            file_location,
+            airport,
+            py_file_location,
         }
     }
 }

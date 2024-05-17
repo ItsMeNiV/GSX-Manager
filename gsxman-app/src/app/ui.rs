@@ -1,8 +1,7 @@
 use super::GsxmanApp;
 use crate::core::{constants, filehandler};
-use egui::{menu, Color32, Id, Margin, Pos2, Ui};
+use egui::{menu, Color32, Id, Margin, Ui};
 use egui_extras::{Column, TableBuilder};
-use tracing::error;
 use walkers::{
     extras::{Place, Places, Style},
     Map, Plugin, Position,
@@ -44,7 +43,7 @@ impl Plugin for &mut ClickWatcher {
     fn run(
         &mut self,
         response: &egui::Response,
-        painter: egui::Painter,
+        _painter: egui::Painter,
         projector: &walkers::Projector,
     ) {
         let click_position =

@@ -16,7 +16,7 @@ pub struct AppConfig {
 }
 
 struct GsxmanApp {
-    app_config: AppConfig,
+    _app_config: AppConfig,
     tiles: Tiles,
     map_memory: MapMemory,
     installed_gsx_profiles: Vec<ProfileFile>,
@@ -38,7 +38,7 @@ impl GsxmanApp {
     fn new(app_config: AppConfig, egui_ctx: Context) -> Self {
         let airport_data = GsxmanCore::filehandler::get_airport_data();
         Self {
-            app_config,
+            _app_config: app_config,
             tiles: Tiles::new(sources::OpenStreetMap, egui_ctx),
             map_memory: MapMemory::default(),
             installed_gsx_profiles: GsxmanCore::filehandler::get_installed_gsx_profiles(
