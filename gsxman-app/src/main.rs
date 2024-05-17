@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use app::AppConfig;
 use tracing::{error, Level};
 use tracing_subscriber::FmtSubscriber;

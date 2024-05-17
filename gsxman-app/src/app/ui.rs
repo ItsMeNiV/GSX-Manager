@@ -1,6 +1,6 @@
 use super::GsxmanApp;
 use crate::core::{constants, filehandler};
-use egui::{menu, Color32, Id, Margin, Ui};
+use egui::{menu, Color32, Id, Margin, RichText, Ui};
 use egui_extras::{Column, TableBuilder};
 use walkers::{
     extras::{Place, Places, Style},
@@ -167,8 +167,8 @@ impl GsxmanApp {
             .resizable(false)
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
             .column(Column::auto().clip(false))
-            .column(Column::remainder().clip(false))
-            .column(Column::remainder().clip(false))
+            .column(Column::auto().clip(false))
+            .column(Column::auto().clip(false))
             .column(Column::remainder().clip(false));
 
         table = table.sense(egui::Sense::click());
@@ -176,13 +176,18 @@ impl GsxmanApp {
         table
             .header(20.0, |mut header| {
                 header.col(|ui| {
-                    ui.heading("ICAO");
+                    ui.add(egui::Label::new(RichText::new("ICAO").heading()).selectable(false));
                 });
                 header.col(|ui| {
-                    ui.heading("Airport Name");
+                    ui.add(
+                        egui::Label::new(RichText::new("Airport Name").heading()).selectable(false),
+                    );
                 });
                 header.col(|ui| {
-                    ui.heading("File Location");
+                    ui.add(
+                        egui::Label::new(RichText::new("File Location").heading())
+                            .selectable(false),
+                    );
                 });
             })
             .body(|mut body| {
@@ -193,13 +198,24 @@ impl GsxmanApp {
                         }
 
                         row.col(|ui| {
-                            ui.label(profile.airport.icao.to_string());
+                            ui.add(
+                                egui::Label::new(profile.airport.icao.to_string())
+                                    .selectable(false),
+                            );
                         });
                         row.col(|ui| {
-                            ui.label(profile.airport.name.to_string());
+                            ui.add(
+                                egui::Label::new(profile.airport.name.to_string())
+                                    .selectable(false),
+                            );
                         });
                         row.col(|ui| {
-                            ui.label(profile.file_location.as_os_str().to_str().unwrap());
+                            ui.add(
+                                egui::Label::new(
+                                    profile.file_location.as_os_str().to_str().unwrap(),
+                                )
+                                .selectable(false),
+                            );
                         });
 
                         if row.response().clicked() {
