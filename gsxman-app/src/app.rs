@@ -62,7 +62,12 @@ impl GsxmanApp {
 
 pub fn start_app(app_config: AppConfig) -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size(constants::WINDOW_SIZE),
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size(constants::WINDOW_SIZE)
+            .with_icon(
+                eframe::icon_data::from_png_bytes(&include_bytes!("../res/icon.png")[..])
+                    .expect("Failed to load icon"),
+            ),
         ..Default::default()
     };
     eframe::run_native(

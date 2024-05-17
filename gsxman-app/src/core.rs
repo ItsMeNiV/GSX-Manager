@@ -37,7 +37,7 @@ impl ProfileFile {
 pub mod constants {
     use egui::Vec2;
     pub static WINDOW_SIZE: Vec2 = Vec2 {
-        x: 1200.0,
-        y: 500.0,
+        x: 1600.0,
+        y: 900.0,
     };
 }

@@ -120,17 +120,19 @@ impl GsxmanApp {
         let places = Places::new(places);
 
         // Manual Zoom by Scrolling. Map Library only allows Zooming by holding Ctrl
-        let scroll_delta = ui.input(|i| i.raw_scroll_delta);
-        if scroll_delta.y > 0.0 {
-            match self.map_memory.zoom_in() {
-                Ok(_) => {}
-                Err(_) => {}
-            };
-        } else if scroll_delta.y < 0.0 {
-            match self.map_memory.zoom_out() {
-                Ok(_) => {}
-                Err(_) => {}
-            };
+        if ui.rect_contains_pointer(ui.max_rect()) {
+            let scroll_delta = ui.input(|i| i.raw_scroll_delta);
+            if scroll_delta.y > 0.0 {
+                match self.map_memory.zoom_in() {
+                    Ok(_) => {}
+                    Err(_) => {}
+                };
+            } else if scroll_delta.y < 0.0 {
+                match self.map_memory.zoom_out() {
+                    Ok(_) => {}
+                    Err(_) => {}
+                };
+            }
         }
 
         ui.add(
