@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use walkers::{sources, MapMemory, Tiles};
 use GsxmanCore::{constants, Airport, ProfileFile};
 
-use self::ui::ClickWatcher;
+use self::ui::{ClickWatcher, ScrollHandler};
 
 mod ui;
 
@@ -15,13 +15,14 @@ pub struct AppConfig {
     pub gsx_profile_path: Option<String>,
 }
 
-struct GsxmanApp {
+struct GsxmanApp<'a> {
     _app_config: AppConfig,
-    tiles: Tiles,
     map_memory: MapMemory,
+    tiles: Tiles,
     installed_gsx_profiles: Vec<ProfileFile>,
     airport_data: HashMap<String, Airport>,
     click_watcher: ui::ClickWatcher,
+    scroll_handler: ui::ScrollHandler<'a>,
     selected_profile: Option<ProfileFile>,
 }
 
@@ -34,13 +35,14 @@ impl Default for AppConfig {
     }
 }
 
-impl GsxmanApp {
+impl<'a> GsxmanApp<'a> {
     fn new(app_config: AppConfig, egui_ctx: Context) -> Self {
         let airport_data = GsxmanCore::filehandler::get_airport_data();
-        Self {
+        let map_memory = MapMemory::default();
+        let mut app = Self {
             _app_config: app_config,
+            map_memory: map_memory,
             tiles: Tiles::new(sources::OpenStreetMap, egui_ctx),
-            map_memory: MapMemory::default(),
             installed_gsx_profiles: GsxmanCore::filehandler::get_installed_gsx_profiles(
                 &airport_data,
             ),
@@ -50,8 +52,14 @@ impl GsxmanApp {
                 clicked_icao: None,
                 has_clicked: false,
             },
+            scroll_handler: ScrollHandler::new(),
             selected_profile: None,
+        };
+        {
+            app.scroll_handler.map_memory = Some(&mut app.map_memory);
         }
+
+        app
     }
 
     fn update_installed_gsx_profiles(&mut self) {
@@ -70,6 +78,7 @@ pub fn start_app(app_config: AppConfig) -> Result<(), eframe::Error> {
             ),
         ..Default::default()
     };
+
     eframe::run_native(
         "GSXManager",
         options,
@@ -81,6 +90,7 @@ pub fn start_app(app_config: AppConfig) -> Result<(), eframe::Error> {
             cc.egui_ctx.set_style(style);
             let mut app = GsxmanApp::new(app_config, cc.egui_ctx.to_owned());
             for _ in 0..12 {
+                let test = &mut app;
                 app.map_memory.zoom_out().expect("Couldn't zoom out");
             }
             Box::<GsxmanApp>::new(app)

@@ -23,3 +23,6 @@ tracing-appender = "0.2.3"
 [profile.release]
 opt-level = 1
 lto = "thin"
+
+[build-dependencies]
+winresource = "0.1.17"

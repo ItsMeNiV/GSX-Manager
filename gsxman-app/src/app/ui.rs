@@ -4,13 +4,18 @@ use egui::{menu, Color32, Id, Margin, RichText, Ui};
 use egui_extras::{Column, TableBuilder};
 use walkers::{
     extras::{Place, Places, Style},
-    Map, Plugin, Position,
+    Map, MapMemory, Plugin, Position,
 };
 
 pub struct ClickWatcher {
     pub places: Option<Vec<Place>>,
     pub clicked_icao: Option<String>,
     pub has_clicked: bool,
+}
+
+pub struct ScrollHandler<'a> {
+    pub scroll_direction: i32,
+    pub map_memory: Option<&'a mut MapMemory>,
 }
 
 struct GsxPlace(Place);
@@ -74,7 +79,51 @@ impl Plugin for &mut ClickWatcher {
     }
 }
 
-impl GsxmanApp {
+impl Plugin for &mut ScrollHandler<'_> {
+    fn run(
+        &mut self,
+        _response: &egui::Response,
+        _painter: egui::Painter,
+        _projector: &walkers::Projector,
+    ) {
+        if self.scroll_direction > 0 {
+            if let Some(mut map_memory) = self.map_memory {
+                match map_memory.zoom_in() {
+                    Ok(_) => {}
+                    Err(_) => {}
+                };
+            }
+        } else if self.scroll_direction < 0 {
+            if let Some(map_memory) = self.map_memory {
+                match map_memory.zoom_out() {
+                    Ok(_) => {}
+                    Err(_) => {}
+                };
+            }
+        }
+
+        self.scroll_direction = 0;
+    }
+}
+
+impl<'a> ScrollHandler<'a> {
+    pub fn new() -> Self {
+        Self {
+            scroll_direction: 0,
+            map_memory: None,
+        }
+    }
+
+    fn request_scroll_in(&mut self) {
+        self.scroll_direction = 1;
+    }
+
+    fn request_scroll_out(&mut self) {
+        self.scroll_direction = -1;
+    }
+}
+
+impl<'a> GsxmanApp<'a> {
     fn update_map_panel(&mut self, ui: &mut Ui) {
         let places: Vec<GsxPlace> = self
             .installed_gsx_profiles
@@ -123,15 +172,9 @@ impl GsxmanApp {
         if ui.rect_contains_pointer(ui.max_rect()) {
             let scroll_delta = ui.input(|i| i.raw_scroll_delta);
             if scroll_delta.y > 0.0 {
-                match self.map_memory.zoom_in() {
-                    Ok(_) => {}
-                    Err(_) => {}
-                };
+                self.scroll_handler.request_scroll_in();
             } else if scroll_delta.y < 0.0 {
-                match self.map_memory.zoom_out() {
-                    Ok(_) => {}
-                    Err(_) => {}
-                };
+                self.scroll_handler.request_scroll_out();
             }
         }
 
@@ -143,7 +186,8 @@ impl GsxmanApp {
             )
             .zoom_gesture(false)
             .with_plugin(places)
-            .with_plugin(&mut self.click_watcher),
+            .with_plugin(&mut self.click_watcher)
+            .with_plugin(&mut self.scroll_handler),
         );
 
         if self.click_watcher.has_clicked {
@@ -255,7 +299,7 @@ impl GsxmanApp {
     }
 }
 
-impl eframe::App for GsxmanApp {
+impl<'a> eframe::App for GsxmanApp<'a> {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let content_width = if let Some(rect) = ctx.input(|i| i.viewport().inner_rect) {
             rect.width()
