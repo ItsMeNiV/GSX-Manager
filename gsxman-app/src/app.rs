@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use walkers::{sources, MapMemory, Tiles};
 use GsxmanCore::{constants, Airport, ProfileFile};
 
-use self::ui::{ClickWatcher, ScrollHandler};
+use self::ui::ClickWatcher;
 
 mod ui;
 
@@ -15,14 +15,13 @@ pub struct AppConfig {
     pub gsx_profile_path: Option<String>,
 }
 
-struct GsxmanApp<'a> {
+struct GsxmanApp {
     _app_config: AppConfig,
     map_memory: MapMemory,
     tiles: Tiles,
     installed_gsx_profiles: Vec<ProfileFile>,
     airport_data: HashMap<String, Airport>,
     click_watcher: ui::ClickWatcher,
-    scroll_handler: ui::ScrollHandler<'a>,
     selected_profile: Option<ProfileFile>,
 }
 
@@ -35,11 +34,11 @@ impl Default for AppConfig {
     }
 }
 
-impl<'a> GsxmanApp<'a> {
+impl GsxmanApp {
     fn new(app_config: AppConfig, egui_ctx: Context) -> Self {
         let airport_data = GsxmanCore::filehandler::get_airport_data();
         let map_memory = MapMemory::default();
-        let mut app = Self {
+        Self {
             _app_config: app_config,
             map_memory: map_memory,
             tiles: Tiles::new(sources::OpenStreetMap, egui_ctx),
@@ -52,14 +51,8 @@ impl<'a> GsxmanApp<'a> {
                 clicked_icao: None,
                 has_clicked: false,
             },
-            scroll_handler: ScrollHandler::new(),
             selected_profile: None,
-        };
-        {
-            app.scroll_handler.map_memory = Some(&mut app.map_memory);
         }
-
-        app
     }
 
     fn update_installed_gsx_profiles(&mut self) {
@@ -90,7 +83,6 @@ pub fn start_app(app_config: AppConfig) -> Result<(), eframe::Error> {
             cc.egui_ctx.set_style(style);
             let mut app = GsxmanApp::new(app_config, cc.egui_ctx.to_owned());
             for _ in 0..12 {
-                let test = &mut app;
                 app.map_memory.zoom_out().expect("Couldn't zoom out");
             }
             Box::<GsxmanApp>::new(app)
