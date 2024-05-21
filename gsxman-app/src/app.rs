@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use walkers::{sources, MapMemory, Tiles};
 use GsxmanCore::{constants, Airport, ProfileFile};
 
-use self::ui::ClickWatcher;
+use self::ui::plugins::ClickWatcher;
 
 mod ui;
 
@@ -21,7 +21,7 @@ struct GsxmanApp {
     tiles: Tiles,
     installed_gsx_profiles: Vec<ProfileFile>,
     airport_data: HashMap<String, Airport>,
-    click_watcher: ui::ClickWatcher,
+    click_watcher: ui::plugins::ClickWatcher,
     selected_profile: Option<ProfileFile>,
 }
 
