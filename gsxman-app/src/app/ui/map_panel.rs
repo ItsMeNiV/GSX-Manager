@@ -1,7 +1,7 @@
-use egui::{Color32, Ui};
+use egui::{Color32, Ui, Vec2};
 use walkers::{
     extras::{Place, Places, Style},
-    Map, Position,
+    Map, Position, Projector,
 };
 
 use crate::app::GsxmanApp;
@@ -28,6 +28,34 @@ impl Clone for GsxPlace {
                 symbol: self.0.symbol.clone(),
                 style: self.0.style.clone(),
             },
+        }
+    }
+}
+
+fn handle_scrolling(app: &mut GsxmanApp, ui: &mut Ui) {
+    if let Some(position) = app.map_memory.detached() {
+        if ui.rect_contains_pointer(ui.max_rect()) {
+            let projected_pointer_pos = {
+                let pointer_pos = ui.input(|i| i.pointer.interact_pos()).unwrap();
+                let projector = Projector::new(ui.clip_rect(), &app.map_memory, position);
+                projector.unproject(Vec2 {
+                    x: pointer_pos.x,
+                    y: pointer_pos.y,
+                })
+            };
+            let scroll_delta = ui.input(|i| i.raw_scroll_delta);
+
+            if scroll_delta.y > 0.0 {
+                match app.map_memory.zoom_in() {
+                    Ok(_) => app.map_memory.center_at(projected_pointer_pos),
+                    Err(_) => {}
+                };
+            } else if scroll_delta.y < 0.0 {
+                match app.map_memory.zoom_out() {
+                    Ok(_) => app.map_memory.center_at(projected_pointer_pos),
+                    Err(_) => {}
+                };
+            }
         }
     }
 }
@@ -77,20 +105,7 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
     let places = Places::new(places);
 
     // Manual Zoom by Scrolling. Map Library only allows Zooming by holding Ctrl
-    if ui.rect_contains_pointer(ui.max_rect()) {
-        let scroll_delta = ui.input(|i| i.raw_scroll_delta);
-        if scroll_delta.y > 0.0 {
-            match app.map_memory.zoom_in() {
-                Ok(_) => {}
-                Err(_) => {}
-            };
-        } else if scroll_delta.y < 0.0 {
-            match app.map_memory.zoom_out() {
-                Ok(_) => {}
-                Err(_) => {}
-            };
-        }
-    }
+    handle_scrolling(app, ui);
 
     ui.add(
         Map::new(
