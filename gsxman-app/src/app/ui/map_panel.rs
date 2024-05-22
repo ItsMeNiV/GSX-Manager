@@ -33,29 +33,38 @@ impl Clone for GsxPlace {
 }
 
 fn handle_scrolling(app: &mut GsxmanApp, ui: &mut Ui) {
-    if let Some(position) = app.map_memory.detached() {
-        if ui.rect_contains_pointer(ui.max_rect()) {
-            let projected_pointer_pos = {
-                let pointer_pos = ui.input(|i| i.pointer.interact_pos()).unwrap();
-                let projector = Projector::new(ui.clip_rect(), &app.map_memory, position);
-                projector.unproject(Vec2 {
-                    x: pointer_pos.x,
-                    y: pointer_pos.y,
-                })
+    let position = {
+        if let Some(position) = app.map_memory.detached() {
+            position
+        } else {
+            Position::from_lat_lon(52.0, 0.0)
+        }
+    };
+    if ui.rect_contains_pointer(ui.max_rect()) {
+        let projected_pointer_pos = {
+            let rect_center = ui.max_rect().center();
+            let pointer_pos = ui.input(|i| i.pointer.interact_pos()).unwrap();
+            let offset = Vec2 {
+                x: pointer_pos.x - rect_center.x,
+                y: pointer_pos.y - rect_center.y,
             };
-            let scroll_delta = ui.input(|i| i.raw_scroll_delta);
+            let projector = Projector::new(ui.max_rect(), &app.map_memory, position);
+            projector.unproject(offset)
+        };
 
-            if scroll_delta.y > 0.0 {
-                match app.map_memory.zoom_in() {
-                    Ok(_) => app.map_memory.center_at(projected_pointer_pos),
-                    Err(_) => {}
-                };
-            } else if scroll_delta.y < 0.0 {
-                match app.map_memory.zoom_out() {
-                    Ok(_) => app.map_memory.center_at(projected_pointer_pos),
-                    Err(_) => {}
-                };
-            }
+        let scroll_delta = ui.input(|i| i.raw_scroll_delta);
+        if scroll_delta.y > 0.0 {
+            app.map_memory.center_at(projected_pointer_pos);
+            match app.map_memory.zoom_in() {
+                Ok(_) => {}
+                Err(_) => {}
+            };
+        } else if scroll_delta.y < 0.0 {
+            app.map_memory.center_at(projected_pointer_pos);
+            match app.map_memory.zoom_out() {
+                Ok(_) => {}
+                Err(_) => {}
+            };
         }
     }
 }
