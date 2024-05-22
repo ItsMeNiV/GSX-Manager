@@ -1,9 +1,10 @@
-use super::{Airport, ProfileFile};
+use super::{Airport, GsxProfile, GsxSection, ProfileFile};
 use crate::util;
 use geoutils::Location;
 use regex::Regex;
 use std::{collections::HashMap, fs, io, path::PathBuf};
 use tracing::{debug, error, warn};
+use walkers::Position;
 
 pub fn get_airport_data() -> HashMap<String, Airport> {
     let mut return_map = HashMap::new();
@@ -71,6 +72,57 @@ pub fn get_installed_gsx_profiles(airport_data: &HashMap<String, Airport>) -> Ve
     }
 
     owned_config_files
+}
+
+pub fn load_profile_data(file: &mut ProfileFile) {
+    let parse_result = ini!(safe file.file_location.as_os_str().to_str().unwrap());
+    match parse_result {
+        Err(error) => {
+            error!("{}", error);
+            return;
+        }
+        Ok(_) => {}
+    };
+    let data_map = parse_result.unwrap();
+    let mut profile_data = GsxProfile::new();
+
+    for (section_name, values) in data_map.iter() {
+        if !values.contains_key("pushback_pos") {
+            // For now we only handle sections that have a pushback_pos
+            continue;
+        }
+
+        let name = section_name.clone();
+        let position = {
+            let mut pos = Position::from_lat_lon(0.0, 0.0);
+            if let Some(string_value) = values["pushback_pos"].clone() {
+                let coord_strings: Vec<&str> = string_value.split(" ").collect();
+                let lat = coord_strings[0].parse::<f64>();
+                let lon = coord_strings[1].parse::<f64>();
+                if lat.is_ok() && lon.is_ok() {
+                    pos = Position::from_lat_lon(lat.unwrap(), lon.unwrap());
+                }
+            }
+            pos
+        };
+        let pushback_label_left = None;
+        let pushback_position_left = None;
+        let pushback_label_right = None;
+        let pushback_position_right = None;
+
+        let section = GsxSection {
+            name,
+            position,
+            pushback_label_left,
+            pushback_position_left,
+            pushback_label_right,
+            pushback_position_right,
+        };
+
+        profile_data.sections.push(section);
+    }
+
+    file.profile_data = Some(profile_data);
 }
 
 pub fn import_config_file_dialog() {

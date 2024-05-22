@@ -4,33 +4,7 @@ use walkers::{
     Map, Position, Projector,
 };
 
-use crate::app::GsxmanApp;
-
-struct GsxPlace(Place);
-
-impl GsxPlace {
-    pub fn to_place(&self) -> Place {
-        Place {
-            position: self.0.position.clone(),
-            label: self.0.label.clone(),
-            symbol: self.0.symbol.clone(),
-            style: self.0.style.clone(),
-        }
-    }
-}
-
-impl Clone for GsxPlace {
-    fn clone(&self) -> Self {
-        Self {
-            0: Place {
-                position: self.0.position.clone(),
-                label: self.0.label.clone(),
-                symbol: self.0.symbol.clone(),
-                style: self.0.style.clone(),
-            },
-        }
-    }
-}
+use crate::{app::GsxmanApp, core::GsxPlace};
 
 fn handle_scrolling(app: &mut GsxmanApp, ui: &mut Ui) {
     let position = {
