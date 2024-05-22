@@ -24,7 +24,7 @@ impl eframe::App for GsxmanApp {
         egui::TopBottomPanel::top(Id::new("top_panel")).show(ctx, |ui| {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 ui.horizontal(|ui| {
-                    self.update_menu_bar_panel(ui);
+                    menu_bar_panel::update_menu_bar_panel(self, ui);
                 });
             });
         });
