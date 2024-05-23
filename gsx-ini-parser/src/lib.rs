@@ -35,12 +35,14 @@ fn get_file_iter(path: &str) -> io::Result<impl Iterator<Item = String>> {
 
 fn handle_section_line(section_string: &String, ini_file: &mut GSXIniFile) -> Option<String> {
     let mut handled_section_name = None;
-    let section_name_regex = Regex::new(r"^\[\s*(?<section_name>\w+)\s*\]$").unwrap();
+    let section_name_regex = Regex::new(r"^\[(?<section_name>.+)\]$").unwrap();
 
     if let Some(caps) = section_name_regex.captures(&section_string) {
-        let section_name = String::from(&caps["section_name"]);
-        ini_file.insert(section_name.clone(), HashMap::new());
-        handled_section_name = Some(section_name);
+        let section_name = String::from(caps["section_name"].trim());
+        if !section_name.is_empty() {
+            ini_file.insert(section_name.clone(), HashMap::new());
+            handled_section_name = Some(section_name);
+        }
     }
     handled_section_name
 }
@@ -90,6 +92,7 @@ mod tests {
         let section2_string = String::from("[    section2]");
         let section3_string = String::from("[      section3       ]");
         let section4_string = String::from("[section4       ]");
+        let section5_string = String::from("[  section 5      ]");
         let invalid_section_string = String::from("[      ]");
 
         let mut ini_file = GSXIniFile::new();
@@ -98,13 +101,15 @@ mod tests {
         handle_section_line(&section2_string, &mut ini_file);
         handle_section_line(&section3_string, &mut ini_file);
         handle_section_line(&section4_string, &mut ini_file);
+        handle_section_line(&section5_string, &mut ini_file);
         handle_section_line(&invalid_section_string, &mut ini_file);
 
-        assert_eq!(ini_file.keys().len(), 4);
+        assert_eq!(ini_file.keys().len(), 5);
         assert!(ini_file.contains_key("section1"));
         assert!(ini_file.contains_key("section2"));
         assert!(ini_file.contains_key("section3"));
         assert!(ini_file.contains_key("section4"));
+        assert!(ini_file.contains_key("section 5"));
     }
     
     #[test]
