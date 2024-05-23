@@ -5,6 +5,7 @@ use regex::Regex;
 use std::{collections::HashMap, fs, io, path::PathBuf};
 use tracing::{debug, error, warn};
 use walkers::Position;
+use gsx_ini_parser;
 
 pub fn get_airport_data() -> HashMap<String, Airport> {
     let mut return_map = HashMap::new();
@@ -75,7 +76,7 @@ pub fn get_installed_gsx_profiles(airport_data: &HashMap<String, Airport>) -> Ve
 }
 
 pub fn load_profile_data(file: &mut ProfileFile) {
-    let parse_result = ini!(safe file.file_location.as_os_str().to_str().unwrap());
+    let parse_result = gsx_ini_parser::parse_file(file.file_location.as_os_str().to_str().unwrap());
     match parse_result {
         Err(error) => {
             error!("{}", error);
@@ -95,13 +96,12 @@ pub fn load_profile_data(file: &mut ProfileFile) {
         let name = section_name.clone();
         let position = {
             let mut pos = Position::from_lat_lon(0.0, 0.0);
-            if let Some(string_value) = values["pushback_pos"].clone() {
-                let coord_strings: Vec<&str> = string_value.split(" ").collect();
-                let lat = coord_strings[0].parse::<f64>();
-                let lon = coord_strings[1].parse::<f64>();
-                if lat.is_ok() && lon.is_ok() {
-                    pos = Position::from_lat_lon(lat.unwrap(), lon.unwrap());
-                }
+            let string_value = values["pushback_pos"].clone();
+            let coord_strings: Vec<&str> = string_value.split(" ").collect();
+            let lat = coord_strings[0].parse::<f64>();
+            let lon = coord_strings[1].parse::<f64>();
+            if lat.is_ok() && lon.is_ok() {
+                pos = Position::from_lat_lon(lat.unwrap(), lon.unwrap());
             }
             pos
         };

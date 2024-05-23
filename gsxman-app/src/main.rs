@@ -8,9 +8,6 @@ mod app;
 mod core;
 mod util;
 
-#[macro_use]
-extern crate ini;
-
 #[cfg(debug_assertions)]
 fn set_logger() {
     // DEV BUILD
