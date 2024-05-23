@@ -1,11 +1,18 @@
-use super::GsxmanApp;
-use crate::core::constants;
 use egui::{Id, Margin};
+
+use crate::core::constants;
+
+use super::GsxmanApp;
 
 mod map_panel;
 mod menu_bar_panel;
 pub mod plugins;
 mod table_panel;
+
+pub enum UIState {
+    Overview,
+    Details,
+}
 
 impl eframe::App for GsxmanApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -37,12 +44,17 @@ impl eframe::App for GsxmanApp {
                 map_panel::update_map_panel(self, ui);
             });
 
-        egui::SidePanel::right(Id::new("configlist_panel"))
-            .frame(rimless)
-            .resizable(false)
-            .exact_width((content_width / 2.0) - 5.0)
-            .show(ctx, |ui| {
-                table_panel::update_table_panel(self, ui);
-            });
+        match self.ui_state {
+            UIState::Overview => {
+                egui::SidePanel::right(Id::new("configlist_panel"))
+                    .frame(rimless)
+                    .resizable(false)
+                    .exact_width((content_width / 2.0) - 5.0)
+                    .show(ctx, |ui| {
+                        table_panel::update_table_panel(self, ui);
+                    });
+            }
+            UIState::Details => {}
+        };
     }
 }

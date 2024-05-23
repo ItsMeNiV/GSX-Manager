@@ -1,9 +1,13 @@
-use crate::core as GsxmanCore;
+use std::collections::HashMap;
+
 use eframe::egui;
 use egui::{Context, Style, Visuals};
-use std::collections::HashMap;
-use walkers::{sources, MapMemory, Tiles};
-use GsxmanCore::{constants, Airport, ProfileFile};
+use walkers::{MapMemory, sources, Tiles};
+
+use GsxmanCore::{Airport, constants, ProfileFile};
+
+use crate::app::ui::UIState;
+use crate::core as GsxmanCore;
 
 use self::ui::plugins::ClickWatcher;
 
@@ -23,6 +27,7 @@ struct GsxmanApp {
     airport_data: HashMap<String, Airport>,
     click_watcher: ui::plugins::ClickWatcher,
     selected_profile: Option<ProfileFile>,
+    ui_state: UIState,
 }
 
 impl Default for AppConfig {
@@ -40,7 +45,7 @@ impl GsxmanApp {
         let map_memory = MapMemory::default();
         Self {
             _app_config: app_config,
-            map_memory: map_memory,
+            map_memory,
             tiles: Tiles::new(sources::OpenStreetMap, egui_ctx),
             installed_gsx_profiles: GsxmanCore::filehandler::get_installed_gsx_profiles(
                 &airport_data,
@@ -52,6 +57,7 @@ impl GsxmanApp {
                 has_clicked: false,
             },
             selected_profile: None,
+            ui_state: UIState::Overview,
         }
     }
 

@@ -5,6 +5,7 @@ use walkers::{
 };
 
 use crate::{app::GsxmanApp, core::GsxPlace};
+use crate::app::ui::UIState;
 
 fn handle_scrolling(app: &mut GsxmanApp, ui: &mut Ui) {
     let position = {
@@ -44,41 +45,7 @@ fn handle_scrolling(app: &mut GsxmanApp, ui: &mut Ui) {
 }
 
 pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
-    let places: Vec<GsxPlace> = app
-        .installed_gsx_profiles
-        .iter()
-        .map(|profile| {
-            GsxPlace(Place {
-                label: profile.airport.icao.to_owned(),
-                position: Position::from_lat_lon(
-                    profile.airport.location.latitude(),
-                    profile.airport.location.longitude(),
-                ),
-                symbol: '✈',
-                style: Style {
-                    label_background: if let Some(selected_profile) = &app.selected_profile {
-                        if selected_profile.airport.icao == profile.airport.icao {
-                            Color32::BLUE.gamma_multiply(0.8)
-                        } else {
-                            Color32::BLACK.gamma_multiply(0.8)
-                        }
-                    } else {
-                        Color32::BLACK.gamma_multiply(0.8)
-                    },
-                    symbol_background: if let Some(selected_profile) = &app.selected_profile {
-                        if selected_profile.airport.icao == profile.airport.icao {
-                            Color32::BLUE.gamma_multiply(0.8)
-                        } else {
-                            Color32::WHITE.gamma_multiply(0.8)
-                        }
-                    } else {
-                        Color32::WHITE.gamma_multiply(0.8)
-                    },
-                    ..Default::default()
-                },
-            })
-        })
-        .collect();
+    let places = get_places_to_display(app);
 
     let places_copy: Vec<Place> = places.to_vec().iter().map(|p| p.to_place()).collect();
     let places: Vec<Place> = places.iter().map(|p| p.to_place()).collect();
@@ -96,9 +63,9 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
             &mut app.map_memory,
             Position::from_lat_lon(52.0, 0.0),
         )
-        .zoom_gesture(false)
-        .with_plugin(places)
-        .with_plugin(&mut app.click_watcher),
+            .zoom_gesture(false)
+            .with_plugin(places)
+            .with_plugin(&mut app.click_watcher),
     );
 
     if app.click_watcher.has_clicked {
@@ -113,5 +80,49 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
         }
 
         app.click_watcher.has_clicked = false;
+    }
+}
+
+fn get_places_to_display(app: &mut GsxmanApp) -> Vec<GsxPlace> {
+    match app.ui_state {
+        UIState::Overview => {
+            app.installed_gsx_profiles
+                .iter()
+                .map(|profile| {
+                    GsxPlace(Place {
+                        label: profile.airport.icao.to_owned(),
+                        position: Position::from_lat_lon(
+                            profile.airport.location.latitude(),
+                            profile.airport.location.longitude(),
+                        ),
+                        symbol: '✈',
+                        style: Style {
+                            label_background: if let Some(selected_profile) = &app.selected_profile {
+                                if selected_profile.airport.icao == profile.airport.icao {
+                                    Color32::BLUE.gamma_multiply(0.8)
+                                } else {
+                                    Color32::BLACK.gamma_multiply(0.8)
+                                }
+                            } else {
+                                Color32::BLACK.gamma_multiply(0.8)
+                            },
+                            symbol_background: if let Some(selected_profile) = &app.selected_profile {
+                                if selected_profile.airport.icao == profile.airport.icao {
+                                    Color32::BLUE.gamma_multiply(0.8)
+                                } else {
+                                    Color32::WHITE.gamma_multiply(0.8)
+                                }
+                            } else {
+                                Color32::WHITE.gamma_multiply(0.8)
+                            },
+                            ..Default::default()
+                        },
+                    })
+                })
+                .collect()
+        }
+        UIState::Details => {
+            vec![]
+        }
     }
 }

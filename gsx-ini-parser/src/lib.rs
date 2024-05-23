@@ -1,7 +1,6 @@
-use std::{collections::HashMap, fs::File, io::{self, BufRead}, num::NonZeroU8};
+use std::{collections::HashMap, fs::File, io::{self, BufRead}};
 
 use regex::Regex;
-
 
 type GSXIniFile = HashMap<String, HashMap<String, String>>;
 
@@ -18,7 +17,7 @@ pub fn parse_file(path: &str) -> io::Result<GSXIniFile> {
                 '[' => {
                     let section_name = handle_section_line(&line, &mut ini_file);
                     current_section = section_name;
-                },
+                }
                 token if token.is_ascii_alphabetic() => handle_key_value_line(&line, &current_section, &mut ini_file),
                 _ => {}
             }
@@ -28,7 +27,7 @@ pub fn parse_file(path: &str) -> io::Result<GSXIniFile> {
     Ok(ini_file)
 }
 
-fn get_file_iter(path: &str) -> io::Result<impl Iterator<Item = String>> {
+fn get_file_iter(path: &str) -> io::Result<impl Iterator<Item=String>> {
     let file = File::open(path)?;
     Ok(io::BufReader::new(file).lines().flatten())
 }
@@ -64,7 +63,7 @@ fn handle_key_value_line(key_value_string: &String, current_section_string: &Opt
 
 #[cfg(test)]
 mod tests {
-    use std::{path::PathBuf};
+    use std::path::PathBuf;
 
     use super::*;
 
@@ -111,7 +110,7 @@ mod tests {
         assert!(ini_file.contains_key("section4"));
         assert!(ini_file.contains_key("section 5"));
     }
-    
+
     #[test]
     fn handle_key_value_line_testcases() {
         let current_section_string = String::from("[Testsection]");
@@ -148,7 +147,5 @@ mod tests {
         assert_eq!(section.get("key4").unwrap().to_owned(), String::from("valuenew"));
         assert_eq!(section.contains_key("key5"), false);
         assert_eq!(section.get("key6").unwrap().to_owned(), String::from("[(value1),(value2)]"));
-
     }
-    
 }
