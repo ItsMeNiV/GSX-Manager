@@ -86,45 +86,68 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
 
 fn get_places_to_display(app: &mut GsxmanApp) -> Vec<GsxPlace> {
     match app.ui_state {
-        UIState::Overview => {
-            let mut places: Vec<GsxPlace> = Vec::new();
-            for (_, profile) in app.installed_gsx_profiles.iter() {
-                places.push(GsxPlace(Place {
-                    label: profile.airport.icao.to_owned(),
-                    position: Position::from_lat_lon(
-                        profile.airport.location.latitude(),
-                        profile.airport.location.longitude(),
-                    ),
-                    symbol: '✈',
-                    style: Style {
-                        label_background: if let Some(selected_profile) = app.get_selected_profile() {
-                            if selected_profile.airport.icao == profile.airport.icao {
-                                Color32::BLUE.gamma_multiply(0.8)
-                            } else {
-                                Color32::BLACK.gamma_multiply(0.8)
-                            }
-                        } else {
-                            Color32::BLACK.gamma_multiply(0.8)
-                        },
-                        symbol_background: if let Some(selected_profile) = app.get_selected_profile() {
-                            if selected_profile.airport.icao == profile.airport.icao {
-                                Color32::BLUE.gamma_multiply(0.8)
-                            } else {
-                                Color32::WHITE.gamma_multiply(0.8)
-                            }
-                        } else {
-                            Color32::WHITE.gamma_multiply(0.8)
-                        },
-                        ..Default::default()
-                    },
-                }));
-            }
-            places
-        }
-        UIState::Details => {
-            vec![]
+        UIState::Overview => get_airport_places(app),
+        UIState::Details => get_airport_detail_places(app)
+    }
+}
+
+fn get_airport_detail_places(app: &mut GsxmanApp) -> Vec<GsxPlace> {
+    let mut places: Vec<GsxPlace> = vec![];
+    if let Some(profile_data) = &app.get_selected_profile().as_ref().unwrap().profile_data {
+        for section in profile_data.sections.iter() {
+            places.push(GsxPlace(Place {
+                label: section.name.to_owned(),
+                position: Position::from_lat_lon(
+                    section.position.lat(),
+                    section.position.lon(),
+                ),
+                symbol: '🖈',
+                style: Style {
+                    label_background: Color32::BLACK.gamma_multiply(0.8),
+                    symbol_background: Color32::WHITE.gamma_multiply(0.8),
+                    ..Default::default()
+                },
+            }));
         }
     }
+
+    places
+}
+
+fn get_airport_places(app: &mut GsxmanApp) -> Vec<GsxPlace> {
+    let mut places: Vec<GsxPlace> = Vec::new();
+    for (_, profile) in app.installed_gsx_profiles.iter() {
+        places.push(GsxPlace(Place {
+            label: profile.airport.icao.to_owned(),
+            position: Position::from_lat_lon(
+                profile.airport.location.latitude(),
+                profile.airport.location.longitude(),
+            ),
+            symbol: '✈',
+            style: Style {
+                label_background: if let Some(selected_profile) = app.get_selected_profile() {
+                    if selected_profile.airport.icao == profile.airport.icao {
+                        Color32::BLUE.gamma_multiply(0.8)
+                    } else {
+                        Color32::BLACK.gamma_multiply(0.8)
+                    }
+                } else {
+                    Color32::BLACK.gamma_multiply(0.8)
+                },
+                symbol_background: if let Some(selected_profile) = app.get_selected_profile() {
+                    if selected_profile.airport.icao == profile.airport.icao {
+                        Color32::BLUE.gamma_multiply(0.8)
+                    } else {
+                        Color32::WHITE.gamma_multiply(0.8)
+                    }
+                } else {
+                    Color32::WHITE.gamma_multiply(0.8)
+                },
+                ..Default::default()
+            },
+        }));
+    }
+    places
 }
 
 pub fn zoom_map_to_position(app: &mut GsxmanApp, position: Position) {

@@ -5,7 +5,6 @@ use uuid::Uuid;
 use walkers::{extras::Place, Position};
 
 pub mod filehandler;
-pub mod ini_parser;
 
 #[derive(Debug, Clone)]
 pub struct Airport {
@@ -27,8 +26,8 @@ pub struct GsxSection {
 #[derive(Debug, Clone)]
 pub struct GsxProfile {
     pub creator: String,
-    //pub deice_labels: Vec<String>, TODO: Will be added when my own ini parsing implementation is done
-    //pub deice_areas: Vec<Position>,
+    pub deice_labels: Vec<String>,
+    pub deice_areas: Vec<Position>,
     pub sections: Vec<GsxSection>,
 }
 
@@ -46,6 +45,8 @@ impl GsxProfile {
     pub fn new() -> Self {
         Self {
             creator: String::from(""),
+            deice_labels: vec![],
+            deice_areas: vec![],
             sections: vec![],
         }
     }

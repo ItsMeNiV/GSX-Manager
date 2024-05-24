@@ -44,17 +44,12 @@ impl eframe::App for GsxmanApp {
                 map_panel::update_map_panel(self, ui);
             });
 
-        match self.ui_state {
-            UIState::Overview => {
-                egui::SidePanel::right(Id::new("configlist_panel"))
-                    .frame(rimless)
-                    .resizable(false)
-                    .exact_width((content_width / 2.0) - 5.0)
-                    .show(ctx, |ui| {
-                        table_panel::update_table_panel(self, ui);
-                    });
-            }
-            UIState::Details => {}
-        };
+        egui::SidePanel::right(Id::new("profilelist_panel"))
+            .frame(rimless)
+            .resizable(false)
+            .exact_width((content_width / 2.0) - 5.0)
+            .show(ctx, |ui| {
+                table_panel::update_table_panel(self, ui);
+            });
     }
 }

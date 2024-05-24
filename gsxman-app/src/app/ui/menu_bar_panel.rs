@@ -15,15 +15,16 @@ pub fn update_menu_bar_panel(app: &mut GsxmanApp, ui: &mut Ui) {
 
                 ui.add_enabled_ui(app.selected_profile_id.is_some(), |ui| {
                     if ui.button("See Profile Details").clicked() {
-                        let profile = app.get_selected_profile_mut().unwrap();
-                        filehandler::load_profile_data(profile);
+                        if let Some(profile) = app.get_selected_profile_mut() {
+                            filehandler::load_profile_data(profile);
 
-                        if let Some(selected_profile) = app.get_selected_profile() {
-                            let zoom_pos = Position::from_lat_lon(selected_profile.airport.location.latitude(), selected_profile.airport.location.longitude());
-                            map_panel::zoom_map_to_position(app, zoom_pos);
+                            if let Some(selected_profile) = app.get_selected_profile() {
+                                let zoom_pos = Position::from_lat_lon(selected_profile.airport.location.latitude(), selected_profile.airport.location.longitude());
+                                map_panel::zoom_map_to_position(app, zoom_pos);
+                            }
+    
+                            app.ui_state = UIState::Details;
                         }
-
-                        app.ui_state = UIState::Details;
                     }
                 });
 

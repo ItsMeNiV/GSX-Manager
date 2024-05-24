@@ -92,8 +92,19 @@ pub fn load_profile_data(file: &mut ProfileFile) {
     let data_map = parse_result.unwrap();
     let mut profile_data = GsxProfile::new();
 
+    if let Some(general_section) = data_map.get("general") {
+        profile_data.creator = {
+            if let Some(creator) = general_section.get("creator") {
+                creator.to_owned()
+            } else {
+                String::from("")
+            }
+        };
+        //TODO: Handle Deice areas as well
+    }
+
     for (section_name, values) in data_map.iter() {
-        if !values.contains_key("pushback_pos") {
+        if !values.contains_key("pushback_pos") || section_name.eq_ignore_ascii_case("general") {
             // For now we only handle sections that have a pushback_pos
             continue;
         }
