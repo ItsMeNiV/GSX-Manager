@@ -2,7 +2,7 @@ use walkers::{extras::Place, Plugin};
 
 pub struct ClickWatcher {
     pub places: Option<Vec<Place>>,
-    pub clicked_icao: Option<String>,
+    pub clicked_label: Option<String>,
     pub has_clicked: bool,
 }
 
@@ -22,7 +22,7 @@ impl Plugin for &mut ClickWatcher {
 
         if let Some(click_pos) = click_position {
             self.has_clicked = true;
-            self.clicked_icao = None;
+            self.clicked_label = None;
 
             if let Some(places) = &self.places {
                 places.iter().for_each(|p| {
@@ -33,7 +33,7 @@ impl Plugin for &mut ClickWatcher {
                         && click_pos.y > (airport_position.y - offset)
                         && click_pos.y < (airport_position.y + offset)
                     {
-                        self.clicked_icao = Some(p.label.to_owned());
+                        self.clicked_label = Some(p.label.to_owned());
                     }
                 });
             }

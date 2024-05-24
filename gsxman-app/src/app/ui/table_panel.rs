@@ -17,16 +17,17 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
     let selected_profile = app.get_selected_profile().unwrap();
     ui.heading(format!("Details {} by {}", selected_profile.file_name, selected_profile.profile_data.as_ref().unwrap().creator));
     ui.separator();
-    let table = TableBuilder::new(ui)
+    let mut table = TableBuilder::new(ui)
         .striped(true)
         .resizable(false)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-        .column(Column::auto().clip(false))
-        .column(Column::auto().clip(false))
-        .column(Column::auto().clip(false))
+        .column(Column::remainder().clip(false))
+        .column(Column::remainder().clip(false))
         .column(Column::remainder().clip(false));
 
-    //table = table.sense(egui::Sense::click());
+    table = table.sense(egui::Sense::click());
+
+    let mut clicked_section_id = None;
 
     table
         .header(20.0, |mut header| {
@@ -43,9 +44,12 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
             });
         })
         .body(|mut body| {
-            
             for section in selected_profile.profile_data.as_ref().unwrap().sections.iter() {
                 body.row(30.0, |mut row| {
+                    if let Some(selected_section_id) = app.selected_section_id.as_ref() {
+                        row.set_selected(*selected_section_id == section.id);
+                    }
+
                     row.col(|ui| {
                         ui.add(
                             egui::Label::new(section.name.to_string()).selectable(false),
@@ -62,9 +66,25 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
                                 .selectable(false),
                         );
                     });
+
+                    if row.response().clicked() {
+                        clicked_section_id = Some(section.id.clone());
+                    }
                 });
             }
         });
+
+        if let Some(clicked_section_id) = clicked_section_id {
+            if let Some(selected_section_id) = app.selected_section_id.as_ref() {
+                if *selected_section_id == clicked_section_id {
+                    app.selected_section_id = None
+                } else {
+                    app.selected_section_id = Some(clicked_section_id.clone());
+                }
+            } else {
+                app.selected_section_id = Some(clicked_section_id.clone());
+            }
+        }
 }
 
 fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
@@ -74,7 +94,6 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
         .striped(true)
         .resizable(false)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-        .column(Column::auto().clip(false))
         .column(Column::auto().clip(false))
         .column(Column::auto().clip(false))
         .column(Column::remainder().clip(false));

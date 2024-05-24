@@ -41,6 +41,7 @@ pub fn update_menu_bar_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                 if ui.button("Back to Overview").clicked() {
                     app.get_selected_profile_mut().unwrap().profile_data = None;
 
+                    app.selected_section_id = None;
                     app.ui_state = UIState::Overview;
                 }
             }

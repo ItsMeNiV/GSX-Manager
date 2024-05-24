@@ -68,16 +68,35 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
             .with_plugin(&mut app.click_watcher),
     );
 
-    // TODO: Maybe need to rethink how to handle this in case of mutliple installed profiles for same airport
+    // TODO: Maybe need to rethink how to handle this in case of multiple installed profiles for same airport
     if app.click_watcher.has_clicked {
-        if let Some(clicked_icao) = &app.click_watcher.clicked_icao {
-            for (_, profile) in app.installed_gsx_profiles.iter() {
-                if clicked_icao.to_owned() == profile.airport.icao {
-                    app.selected_profile_id = Some(profile.id.clone());
+        if let Some(clicked_label) = &app.click_watcher.clicked_label {
+            match app.ui_state {
+                UIState::Overview => {
+                    for (_, profile) in app.installed_gsx_profiles.iter() {
+                        if clicked_label.to_owned() == profile.airport.icao {
+                            app.selected_profile_id = Some(profile.id.clone());
+                        }
+                    }
+                },
+                UIState::Details => {
+                    for (_, profile) in app.installed_gsx_profiles.iter() {
+                        if let Some(profile_data) = profile.profile_data.as_ref() {
+                            for section in profile_data.sections.iter() {
+                                if clicked_label.to_owned() == section.name.to_owned() {
+                                    app.selected_section_id = Some(section.id.clone());
+                                }
+                            }
+                        }
+                    }
                 }
             }
+            
         } else {
-            app.selected_profile_id = None;
+            match app.ui_state {
+                UIState::Overview => app.selected_profile_id = None,
+                UIState::Details => app.selected_section_id = None
+            }
         }
 
         app.click_watcher.has_clicked = false;
@@ -103,8 +122,24 @@ fn get_airport_detail_places(app: &mut GsxmanApp) -> Vec<GsxPlace> {
                 ),
                 symbol: '🖈',
                 style: Style {
-                    label_background: Color32::BLACK.gamma_multiply(0.8),
-                    symbol_background: Color32::WHITE.gamma_multiply(0.8),
+                    label_background: if let Some(selected_section_id) = app.selected_section_id.as_ref() {
+                        if *selected_section_id == section.id {
+                            Color32::BLUE.gamma_multiply(0.8)
+                        } else {
+                            Color32::BLACK.gamma_multiply(0.8)
+                        }
+                    } else {
+                        Color32::BLACK.gamma_multiply(0.8)
+                    },
+                    symbol_background: if let Some(selected_section_id) = app.selected_section_id.as_ref() {
+                        if *selected_section_id == section.id {
+                            Color32::BLUE.gamma_multiply(0.8)
+                        } else {
+                            Color32::WHITE.gamma_multiply(0.8)
+                        }
+                    } else {
+                        Color32::WHITE.gamma_multiply(0.8)
+                    },
                     ..Default::default()
                 },
             }));

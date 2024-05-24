@@ -28,6 +28,7 @@ struct GsxmanApp {
     airport_data: HashMap<String, Airport>,
     click_watcher: ui::plugins::ClickWatcher,
     selected_profile_id: Option<Uuid>,
+    selected_section_id: Option<Uuid>,
     ui_state: UIState,
 }
 
@@ -54,10 +55,11 @@ impl GsxmanApp {
             airport_data,
             click_watcher: ClickWatcher {
                 places: None,
-                clicked_icao: None,
+                clicked_label: None,
                 has_clicked: false,
             },
             selected_profile_id: None,
+            selected_section_id: None,
             ui_state: UIState::Overview,
         }
     }

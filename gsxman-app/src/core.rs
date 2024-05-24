@@ -15,6 +15,7 @@ pub struct Airport {
 
 #[derive(Debug, Clone)]
 pub struct GsxSection {
+    pub id: Uuid,
     pub name: String,
     pub position: Position,
     pub pushback_label_left: Option<String>,

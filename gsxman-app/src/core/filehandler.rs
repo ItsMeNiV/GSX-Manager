@@ -127,6 +127,7 @@ pub fn load_profile_data(file: &mut ProfileFile) {
         let pushback_position_right = None;
 
         let section = GsxSection {
+            id: Uuid::new_v4(),
             name,
             position,
             pushback_label_left,
