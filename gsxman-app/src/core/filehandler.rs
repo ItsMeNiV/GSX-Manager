@@ -1,11 +1,16 @@
-use super::{Airport, GsxProfile, GsxSection, ProfileFile};
-use crate::util;
+use std::{collections::HashMap, fs, io, path::PathBuf};
+
 use geoutils::Location;
 use regex::Regex;
-use std::{collections::HashMap, fs, io, path::PathBuf};
 use tracing::{debug, error, warn};
+use uuid::Uuid;
 use walkers::Position;
+
 use gsx_ini_parser;
+
+use crate::util;
+
+use super::{Airport, GsxProfile, GsxSection, ProfileFile};
 
 pub fn get_airport_data() -> HashMap<String, Airport> {
     let mut return_map = HashMap::new();
@@ -30,8 +35,8 @@ pub fn get_airport_data() -> HashMap<String, Airport> {
     return_map
 }
 
-pub fn get_installed_gsx_profiles(airport_data: &HashMap<String, Airport>) -> Vec<ProfileFile> {
-    let mut owned_config_files: Vec<ProfileFile> = Vec::new();
+pub fn get_installed_gsx_profiles(airport_data: &HashMap<String, Airport>) -> HashMap<Uuid, ProfileFile> {
+    let mut installed_config_files: HashMap<Uuid, ProfileFile> = HashMap::new();
     let gsx_path = util::get_gsx_profile_path();
 
     let entries = fs::read_dir(gsx_path)
@@ -68,11 +73,11 @@ pub fn get_installed_gsx_profiles(airport_data: &HashMap<String, Airport>) -> Ve
                 airport.to_owned().clone(),
                 python_file,
             );
-            owned_config_files.push(config);
+            installed_config_files.insert(config.id.clone(), config);
         };
     }
 
-    owned_config_files
+    installed_config_files
 }
 
 pub fn load_profile_data(file: &mut ProfileFile) {

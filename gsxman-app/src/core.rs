@@ -1,9 +1,11 @@
-pub mod filehandler;
-pub mod ini_parser;
+use std::path::PathBuf;
 
 use geoutils::Location;
-use std::path::PathBuf;
+use uuid::Uuid;
 use walkers::{extras::Place, Position};
+
+pub mod filehandler;
+pub mod ini_parser;
 
 #[derive(Debug, Clone)]
 pub struct Airport {
@@ -32,6 +34,7 @@ pub struct GsxProfile {
 
 #[derive(Debug, Clone)]
 pub struct ProfileFile {
+    pub id: Uuid,
     pub file_name: String,
     pub file_location: PathBuf,
     pub airport: Airport,
@@ -56,6 +59,7 @@ impl ProfileFile {
         py_file_location: Option<PathBuf>,
     ) -> ProfileFile {
         ProfileFile {
+            id: Uuid::new_v4(),
             file_name,
             file_location,
             airport,
@@ -93,6 +97,7 @@ impl Clone for GsxPlace {
 
 pub mod constants {
     use egui::Vec2;
+
     pub static WINDOW_SIZE: Vec2 = Vec2 {
         x: 1600.0,
         y: 900.0,

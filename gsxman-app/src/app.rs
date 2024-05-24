@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use eframe::egui;
 use egui::{Context, Style, Visuals};
+use uuid::Uuid;
 use walkers::{MapMemory, sources, Tiles};
 
 use GsxmanCore::{Airport, constants, ProfileFile};
@@ -23,10 +24,10 @@ struct GsxmanApp {
     _app_config: AppConfig,
     map_memory: MapMemory,
     tiles: Tiles,
-    installed_gsx_profiles: Vec<ProfileFile>,
+    installed_gsx_profiles: HashMap<Uuid, ProfileFile>,
     airport_data: HashMap<String, Airport>,
     click_watcher: ui::plugins::ClickWatcher,
-    selected_profile: Option<ProfileFile>,
+    selected_profile_id: Option<Uuid>,
     ui_state: UIState,
 }
 
@@ -56,7 +57,7 @@ impl GsxmanApp {
                 clicked_icao: None,
                 has_clicked: false,
             },
-            selected_profile: None,
+            selected_profile_id: None,
             ui_state: UIState::Overview,
         }
     }
@@ -64,6 +65,22 @@ impl GsxmanApp {
     fn update_installed_gsx_profiles(&mut self) {
         self.installed_gsx_profiles =
             GsxmanCore::filehandler::get_installed_gsx_profiles(&self.airport_data);
+    }
+
+    fn get_selected_profile(&self) -> Option<&ProfileFile> {
+        let mut selected_profile: Option<&ProfileFile> = None;
+        if let Some(id) = self.selected_profile_id {
+            selected_profile = self.installed_gsx_profiles.get(&id)
+        }
+        selected_profile
+    }
+
+    fn get_selected_profile_mut(&mut self) -> Option<&mut ProfileFile> {
+        let mut selected_profile: Option<&mut ProfileFile> = None;
+        if let Some(id) = self.selected_profile_id {
+            selected_profile = self.installed_gsx_profiles.get_mut(&id)
+        }
+        selected_profile
     }
 }
 

@@ -68,15 +68,16 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
             .with_plugin(&mut app.click_watcher),
     );
 
+    // TODO: Maybe need to rethink how to handle this in case of mutliple installed profiles for same airport
     if app.click_watcher.has_clicked {
         if let Some(clicked_icao) = &app.click_watcher.clicked_icao {
-            app.installed_gsx_profiles.iter().for_each(|p| {
-                if clicked_icao.to_owned() == p.airport.icao {
-                    app.selected_profile = Some(p.clone());
+            for (_, profile) in app.installed_gsx_profiles.iter() {
+                if clicked_icao.to_owned() == profile.airport.icao {
+                    app.selected_profile_id = Some(profile.id.clone());
                 }
-            });
+            }
         } else {
-            app.selected_profile = None;
+            app.selected_profile_id = None;
         }
 
         app.click_watcher.has_clicked = false;
@@ -86,43 +87,56 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
 fn get_places_to_display(app: &mut GsxmanApp) -> Vec<GsxPlace> {
     match app.ui_state {
         UIState::Overview => {
-            app.installed_gsx_profiles
-                .iter()
-                .map(|profile| {
-                    GsxPlace(Place {
-                        label: profile.airport.icao.to_owned(),
-                        position: Position::from_lat_lon(
-                            profile.airport.location.latitude(),
-                            profile.airport.location.longitude(),
-                        ),
-                        symbol: '✈',
-                        style: Style {
-                            label_background: if let Some(selected_profile) = &app.selected_profile {
-                                if selected_profile.airport.icao == profile.airport.icao {
-                                    Color32::BLUE.gamma_multiply(0.8)
-                                } else {
-                                    Color32::BLACK.gamma_multiply(0.8)
-                                }
+            let mut places: Vec<GsxPlace> = Vec::new();
+            for (_, profile) in app.installed_gsx_profiles.iter() {
+                places.push(GsxPlace(Place {
+                    label: profile.airport.icao.to_owned(),
+                    position: Position::from_lat_lon(
+                        profile.airport.location.latitude(),
+                        profile.airport.location.longitude(),
+                    ),
+                    symbol: '✈',
+                    style: Style {
+                        label_background: if let Some(selected_profile) = app.get_selected_profile() {
+                            if selected_profile.airport.icao == profile.airport.icao {
+                                Color32::BLUE.gamma_multiply(0.8)
                             } else {
                                 Color32::BLACK.gamma_multiply(0.8)
-                            },
-                            symbol_background: if let Some(selected_profile) = &app.selected_profile {
-                                if selected_profile.airport.icao == profile.airport.icao {
-                                    Color32::BLUE.gamma_multiply(0.8)
-                                } else {
-                                    Color32::WHITE.gamma_multiply(0.8)
-                                }
+                            }
+                        } else {
+                            Color32::BLACK.gamma_multiply(0.8)
+                        },
+                        symbol_background: if let Some(selected_profile) = app.get_selected_profile() {
+                            if selected_profile.airport.icao == profile.airport.icao {
+                                Color32::BLUE.gamma_multiply(0.8)
                             } else {
                                 Color32::WHITE.gamma_multiply(0.8)
-                            },
-                            ..Default::default()
+                            }
+                        } else {
+                            Color32::WHITE.gamma_multiply(0.8)
                         },
-                    })
-                })
-                .collect()
+                        ..Default::default()
+                    },
+                }));
+            }
+            places
         }
         UIState::Details => {
             vec![]
         }
+    }
+}
+
+pub fn zoom_map_to_position(app: &mut GsxmanApp, position: Position) {
+    app.map_memory.center_at(position);
+
+    // Since we don't have any fine control of the zoom level outside of the library we use this hack
+    // First zoom in all the way (until zoom_in() returns Err(InvalidZoom)), then zoom out as far as we need
+    while app.map_memory.zoom_in().is_ok() {}
+    for _ in 0..4 {
+        match app.map_memory.zoom_out() {
+            Ok(_) => {}
+            Err(_) => {}
+        };
     }
 }

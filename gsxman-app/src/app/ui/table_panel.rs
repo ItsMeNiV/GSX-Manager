@@ -32,10 +32,10 @@ pub fn update_table_panel(app: &mut GsxmanApp, ui: &mut Ui) {
             });
         })
         .body(|mut body| {
-            for profile in &app.installed_gsx_profiles {
+            for (id, profile) in app.installed_gsx_profiles.iter() {
                 body.row(30.0, |mut row| {
-                    if let Some(selected_profile) = &app.selected_profile {
-                        row.set_selected(selected_profile.airport.icao == profile.airport.icao);
+                    if let Some(selected_profile_id) = app.selected_profile_id {
+                        row.set_selected(selected_profile_id == *id);
                     }
 
                     row.col(|ui| {
@@ -56,14 +56,14 @@ pub fn update_table_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                     });
 
                     if row.response().clicked() {
-                        if let Some(selected_profile) = &app.selected_profile {
-                            if selected_profile.airport.icao == profile.airport.icao {
-                                app.selected_profile = None
+                        if let Some(selected_profile_id) = app.selected_profile_id {
+                            if selected_profile_id == profile.id {
+                                app.selected_profile_id = None
                             } else {
-                                app.selected_profile = Some(profile.clone());
+                                app.selected_profile_id = Some(profile.id.clone());
                             }
                         } else {
-                            app.selected_profile = Some(profile.clone());
+                            app.selected_profile_id = Some(profile.id.clone());
                         }
                     }
                 });
