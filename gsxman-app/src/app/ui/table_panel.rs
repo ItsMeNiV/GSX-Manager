@@ -195,6 +195,19 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
     }
     if let Some(new_ui_state) = new_ui_state {
         app.ui_state = new_ui_state;
+
+        match app.ui_state {
+            UIState::SectionDetails => {
+                if let Some(selected_section) = app.get_selected_section() {
+                    let zoom_pos = Position::from_lat_lon(
+                        selected_section.position.lat(),
+                        selected_section.position.lon(),
+                    );
+                    map_panel::zoom_map_to_position(app, zoom_pos, 2);
+                }
+            },
+            _ => {}
+        }
     }
 }
 
@@ -282,9 +295,10 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
 
 fn handle_profile_delete(app: &mut GsxmanApp) {
     let file_location = &app.get_selected_profile().unwrap().file_location;
-    filehandler::delete_config_file(file_location);
-    app.selected_profile_id = None;
-    app.update_installed_gsx_profiles();
+    if filehandler::delete_config_file(file_location) {
+        app.selected_profile_id = None;
+        app.update_installed_gsx_profiles();
+    }
 }
 
 fn handle_profile_details(app: &mut GsxmanApp) {
@@ -296,7 +310,7 @@ fn handle_profile_details(app: &mut GsxmanApp) {
                 selected_profile.airport.location.latitude(),
                 selected_profile.airport.location.longitude(),
             );
-            map_panel::zoom_map_to_position(app, zoom_pos);
+            map_panel::zoom_map_to_position(app, zoom_pos, 4);
         }
 
         app.ui_state = UIState::Details;

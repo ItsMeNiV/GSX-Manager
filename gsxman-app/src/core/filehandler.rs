@@ -196,7 +196,7 @@ pub fn import_config_file_dialog() {
     }
 }
 
-pub fn delete_config_file(airport_path_to_delete: &PathBuf) {
+pub fn delete_config_file(airport_path_to_delete: &PathBuf) -> bool {
     let filename = airport_path_to_delete
         .file_name()
         .unwrap()
@@ -233,18 +233,22 @@ pub fn delete_config_file(airport_path_to_delete: &PathBuf) {
                                 "Deleted associated python file {}",
                                 python_file.file_name().unwrap().to_str().unwrap()
                             );
+                            return true;
                         }
                         Err(error) => {
-                            error!("{}", error)
+                            error!("{}", error);
+                            return false;
                         }
                     }
                 }
+                return true;
             }
             Err(error) => {
-                error!("{}", error)
+                error!("{}", error);
+                return false;
             }
         },
-        _ => {}
+        _ => return false
     }
 }
 

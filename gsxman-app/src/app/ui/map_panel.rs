@@ -116,6 +116,19 @@ fn get_places_to_display(app: &mut GsxmanApp) -> Vec<GsxPlace> {
 fn get_section_detail_places(app: &mut GsxmanApp) -> Vec<GsxPlace> {
     let mut places: Vec<GsxPlace> = vec![];
     if let Some(selected_section) = app.get_selected_section() {
+        places.push(GsxPlace(Place {
+            label: selected_section.name.to_owned(),
+            position: Position::from_lat_lon(
+                selected_section.position.lat(),
+                selected_section.position.lon(),
+            ),
+            symbol: '✈',
+            style: Style {
+                label_background: Color32::BLACK.gamma_multiply(0.8),
+                symbol_background: Color32::WHITE.gamma_multiply(0.8),
+                ..Default::default()
+            },
+        }));
         if let Some(pushback_position_left) = &selected_section.pushback_position_left {
             if let Some(pushback_label_left) = &selected_section.pushback_label_left {
                 places.push(GsxPlace(Place {
@@ -229,13 +242,13 @@ fn get_airport_places(app: &mut GsxmanApp) -> Vec<GsxPlace> {
     places
 }
 
-pub fn zoom_map_to_position(app: &mut GsxmanApp, position: Position) {
+pub fn zoom_map_to_position(app: &mut GsxmanApp, position: Position, zoom_level: u32) {
     app.map_memory.center_at(position);
 
     // Since we don't have any fine control of the zoom level outside of the library we use this hack
     // First zoom in all the way (until zoom_in() returns Err(InvalidZoom)), then zoom out as far as we need
     while app.map_memory.zoom_in().is_ok() {}
-    for _ in 0..4 {
+    for _ in 0..zoom_level {
         match app.map_memory.zoom_out() {
             Ok(_) => {}
             Err(_) => {}
