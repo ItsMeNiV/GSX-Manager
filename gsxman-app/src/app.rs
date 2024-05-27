@@ -8,7 +8,7 @@ use walkers::{MapMemory, sources, Tiles};
 use GsxmanCore::{Airport, constants, ProfileFile};
 
 use crate::app::ui::UIState;
-use crate::core as GsxmanCore;
+use crate::core::{self as GsxmanCore, GsxSection};
 
 use self::ui::plugins::ClickWatcher;
 
@@ -83,6 +83,23 @@ impl GsxmanApp {
             selected_profile = self.installed_gsx_profiles.get_mut(&id)
         }
         selected_profile
+    }
+
+    fn get_selected_section(&self) -> Option<&GsxSection> {
+        let mut selected_section: Option<&GsxSection> = None;
+        if let Some(id) = self.selected_section_id {
+            if let Some(profile) = self.get_selected_profile() {
+                if let Some(profile_data) = &profile.profile_data {
+                    for section in profile_data.sections.iter() {
+                        if section.id.clone() == id {
+                            selected_section = Some(section);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        selected_section
     }
 }
 

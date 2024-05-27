@@ -12,6 +12,7 @@ mod table_panel;
 pub enum UIState {
     Overview,
     Details,
+    SectionDetails,
 }
 
 impl eframe::App for GsxmanApp {

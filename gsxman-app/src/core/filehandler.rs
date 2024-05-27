@@ -35,7 +35,9 @@ pub fn get_airport_data() -> HashMap<String, Airport> {
     return_map
 }
 
-pub fn get_installed_gsx_profiles(airport_data: &HashMap<String, Airport>) -> HashMap<Uuid, ProfileFile> {
+pub fn get_installed_gsx_profiles(
+    airport_data: &HashMap<String, Airport>,
+) -> HashMap<Uuid, ProfileFile> {
     let mut installed_config_files: HashMap<Uuid, ProfileFile> = HashMap::new();
     let gsx_path = util::get_gsx_profile_path();
 
@@ -110,21 +112,34 @@ pub fn load_profile_data(file: &mut ProfileFile) {
         }
 
         let name = section_name.clone();
-        let position = {
-            let mut pos = Position::from_lat_lon(0.0, 0.0);
-            let string_value = values["pushback_pos"].clone();
-            let coord_strings: Vec<&str> = string_value.split(" ").collect();
-            let lat = coord_strings[0].parse::<f64>();
-            let lon = coord_strings[1].parse::<f64>();
-            if lat.is_ok() && lon.is_ok() {
-                pos = Position::from_lat_lon(lat.unwrap(), lon.unwrap());
+
+        let position = position_string_to_position(&values["pushback_pos"]);
+        if position.is_none() {
+            warn!("Section {} has no Position", &name);
+            continue;
+        }
+        let position = position.unwrap();
+
+        let mut pushback_label_left = None;
+        let mut pushback_position_left = None;
+        let mut pushback_label_right = None;
+        let mut pushback_position_right = None;
+        if let Some(pushback_labels) = values.get("pushbacklabels") {
+            let pushback_labels: Vec<&str> = pushback_labels.split('|').collect();
+            if !pushback_labels.is_empty() {
+                if let Some(string_value) = values.get("pushbackleftpos") {
+                    pushback_label_left = Some(pushback_labels[0].to_string());
+                    pushback_position_left = position_string_to_position(string_value);
+                }
+
+                if pushback_labels.len() > 1 {
+                    if let Some(string_value) = values.get("pushbackrightpos") {
+                        pushback_label_right = Some(pushback_labels[1].to_string());
+                        pushback_position_right = position_string_to_position(string_value);
+                    }
+                }
             }
-            pos
-        };
-        let pushback_label_left = None;
-        let pushback_position_left = None;
-        let pushback_label_right = None;
-        let pushback_position_right = None;
+        }
 
         let section = GsxSection {
             id: Uuid::new_v4(),
@@ -140,6 +155,18 @@ pub fn load_profile_data(file: &mut ProfileFile) {
     }
 
     file.profile_data = Some(profile_data);
+}
+
+#[inline]
+fn position_string_to_position(string_value: &String) -> Option<Position> {
+    let mut pos = Position::from_lat_lon(0.0, 0.0);
+    let coord_strings: Vec<&str> = string_value.split(" ").collect();
+    let lat = coord_strings[0].parse::<f64>();
+    let lon = coord_strings[1].parse::<f64>();
+    if lat.is_ok() && lon.is_ok() {
+        pos = Position::from_lat_lon(lat.unwrap(), lon.unwrap());
+    }
+    Some(pos)
 }
 
 pub fn import_config_file_dialog() {
@@ -170,33 +197,54 @@ pub fn import_config_file_dialog() {
 }
 
 pub fn delete_config_file(airport_path_to_delete: &PathBuf) {
-    match fs::remove_file(airport_path_to_delete) {
-        Ok(_) => {
-            debug!(
-                "Deleted profile {}",
-                airport_path_to_delete
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-            );
-            if let Some(python_file) = get_associated_python_file(airport_path_to_delete) {
-                match fs::remove_file(&python_file) {
-                    Ok(_) => {
-                        debug!(
-                            "Deleted associated python file {}",
-                            python_file.file_name().unwrap().to_str().unwrap()
-                        );
-                    }
-                    Err(error) => {
-                        error!("{}", error)
+    let filename = airport_path_to_delete
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string();
+    let message_dialog = rfd::MessageDialog::new()
+        .set_buttons(rfd::MessageButtons::OkCancelCustom(
+            "Yes".to_string(),
+            "Cancel".to_string(),
+        ))
+        .set_description(format!(
+            "Are you sure you want to delete profile {}",
+            filename
+        ))
+        .set_title("Delete Profile")
+        .set_level(rfd::MessageLevel::Warning)
+        .show();
+    match message_dialog {
+        rfd::MessageDialogResult::Ok => match fs::remove_file(airport_path_to_delete) {
+            Ok(_) => {
+                debug!(
+                    "Deleted profile {}",
+                    airport_path_to_delete
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                );
+                if let Some(python_file) = get_associated_python_file(airport_path_to_delete) {
+                    match fs::remove_file(&python_file) {
+                        Ok(_) => {
+                            debug!(
+                                "Deleted associated python file {}",
+                                python_file.file_name().unwrap().to_str().unwrap()
+                            );
+                        }
+                        Err(error) => {
+                            error!("{}", error)
+                        }
                     }
                 }
             }
-        }
-        Err(error) => {
-            error!("{}", error)
-        }
+            Err(error) => {
+                error!("{}", error)
+            }
+        },
+        _ => {}
     }
 }
 

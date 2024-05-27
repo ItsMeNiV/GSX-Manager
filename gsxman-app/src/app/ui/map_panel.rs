@@ -89,13 +89,15 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                             }
                         }
                     }
-                }
+                },
+                UIState::SectionDetails => {}
             }
             
         } else {
             match app.ui_state {
                 UIState::Overview => app.selected_profile_id = None,
-                UIState::Details => app.selected_section_id = None
+                UIState::Details => app.selected_section_id = None,
+                UIState::SectionDetails => {}
             }
         }
 
@@ -106,8 +108,50 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
 fn get_places_to_display(app: &mut GsxmanApp) -> Vec<GsxPlace> {
     match app.ui_state {
         UIState::Overview => get_airport_places(app),
-        UIState::Details => get_airport_detail_places(app)
+        UIState::Details => get_airport_detail_places(app),
+        UIState::SectionDetails => get_section_detail_places(app)
     }
+}
+
+fn get_section_detail_places(app: &mut GsxmanApp) -> Vec<GsxPlace> {
+    let mut places: Vec<GsxPlace> = vec![];
+    if let Some(selected_section) = app.get_selected_section() {
+        if let Some(pushback_position_left) = &selected_section.pushback_position_left {
+            if let Some(pushback_label_left) = &selected_section.pushback_label_left {
+                places.push(GsxPlace(Place {
+                    label: pushback_label_left.to_owned(),
+                    position: Position::from_lat_lon(
+                        pushback_position_left.lat(),
+                        pushback_position_left.lon(),
+                    ),
+                    symbol: '🖈',
+                    style: Style {
+                        label_background: Color32::BLACK.gamma_multiply(0.8),
+                        symbol_background: Color32::WHITE.gamma_multiply(0.8),
+                        ..Default::default()
+                    },
+                }));
+            }
+        }
+        if let Some(pushback_position_right) = &selected_section.pushback_position_right {
+            if let Some(pushback_label_right) = &selected_section.pushback_label_right {
+                places.push(GsxPlace(Place {
+                    label: pushback_label_right.to_owned(),
+                    position: Position::from_lat_lon(
+                        pushback_position_right.lat(),
+                        pushback_position_right.lon(),
+                    ),
+                    symbol: '🖈',
+                    style: Style {
+                        label_background: Color32::BLACK.gamma_multiply(0.8),
+                        symbol_background: Color32::WHITE.gamma_multiply(0.8),
+                        ..Default::default()
+                    },
+                }));
+            }
+        }
+    }
+    places
 }
 
 fn get_airport_detail_places(app: &mut GsxmanApp) -> Vec<GsxPlace> {
