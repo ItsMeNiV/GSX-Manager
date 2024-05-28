@@ -1,5 +1,8 @@
+use std::borrow::BorrowMut;
+
 use egui::{RichText, Ui};
 use egui_extras::{Column, TableBuilder};
+use itertools::Itertools;
 use walkers::Position;
 
 use crate::{app::GsxmanApp, core::filehandler};
@@ -130,13 +133,9 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
             });
         })
         .body(|mut body| {
-            for section in selected_profile
-                .profile_data
-                .as_ref()
-                .unwrap()
-                .sections
-                .iter()
-            {
+            let sections = selected_profile.profile_data.as_ref().unwrap().sections.clone();
+            let sections_iter = sections.iter().sorted_by(|a, b| Ord::cmp(&a.name, &b.name));
+            for section in sections_iter {
                 body.row(30.0, |mut row| {
                     if let Some(selected_section_id) = app.selected_section_id.as_ref() {
                         row.set_selected(*selected_section_id == section.id);
@@ -244,7 +243,9 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
         })
         .body(|mut body| {
             let mut installed_profiles = app.installed_gsx_profiles.clone();
-            for (id, profile) in installed_profiles.iter_mut() {
+            let installed_profiles_iter = installed_profiles.iter_mut().sorted_by(|a, b| Ord::cmp(&a.1.airport.icao, &b.1.airport.icao));
+
+            for (id, profile) in installed_profiles_iter {
                 body.row(30.0, |mut row| {
                     if let Some(selected_profile_id) = app.selected_profile_id {
                         row.set_selected(selected_profile_id == *id);
