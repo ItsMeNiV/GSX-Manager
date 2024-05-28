@@ -40,6 +40,7 @@ pub struct ProfileFile {
     pub airport: Airport,
     pub py_file_location: Option<PathBuf>,
     pub profile_data: Option<GsxProfile>,
+    pub has_duplicate_error: bool,
 }
 
 impl GsxProfile {
@@ -67,6 +68,7 @@ impl ProfileFile {
             airport,
             py_file_location,
             profile_data: None,
+            has_duplicate_error: false,
         }
     }
 }
@@ -101,7 +103,7 @@ pub mod constants {
     use egui::Vec2;
 
     pub static WINDOW_SIZE: Vec2 = Vec2 {
-        x: 1600.0,
+        x: 1700.0,
         y: 900.0,
     };
 }

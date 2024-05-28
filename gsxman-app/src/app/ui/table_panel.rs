@@ -1,6 +1,4 @@
-use std::borrow::BorrowMut;
-
-use egui::{RichText, Ui};
+use egui::{Color32, RichText, Ui};
 use egui_extras::{Column, TableBuilder};
 use itertools::Itertools;
 use walkers::Position;
@@ -133,7 +131,12 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
             });
         })
         .body(|mut body| {
-            let sections = selected_profile.profile_data.as_ref().unwrap().sections.clone();
+            let sections = selected_profile
+                .profile_data
+                .as_ref()
+                .unwrap()
+                .sections
+                .clone();
             let sections_iter = sections.iter().sorted_by(|a, b| Ord::cmp(&a.name, &b.name));
             for section in sections_iter {
                 body.row(30.0, |mut row| {
@@ -170,7 +173,6 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
                                 id
                             };
                             new_ui_state = Some(UIState::SectionDetails);
-                            //TODO
                         }
                     });
 
@@ -204,7 +206,7 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
                     );
                     map_panel::zoom_map_to_position(app, zoom_pos, 2);
                 }
-            },
+            }
             _ => {}
         }
     }
@@ -243,7 +245,9 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
         })
         .body(|mut body| {
             let mut installed_profiles = app.installed_gsx_profiles.clone();
-            let installed_profiles_iter = installed_profiles.iter_mut().sorted_by(|a, b| Ord::cmp(&a.1.airport.icao, &b.1.airport.icao));
+            let installed_profiles_iter = installed_profiles
+                .iter_mut()
+                .sorted_by(|a, b| Ord::cmp(&a.1.airport.icao, &b.1.airport.icao));
 
             for (id, profile) in installed_profiles_iter {
                 body.row(30.0, |mut row| {
@@ -251,10 +255,21 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
                         row.set_selected(selected_profile_id == *id);
                     }
 
+                    let icao_string = {
+                        if profile.has_duplicate_error {
+                            RichText::new(String::from("⚠ ") + profile.airport.icao.as_str()).color(Color32::RED)
+                        } else {
+                            RichText::new(profile.airport.icao.to_string())
+                        }
+                    };
+
                     row.col(|ui| {
-                        ui.add(
-                            egui::Label::new(profile.airport.icao.to_string()).selectable(false),
+                        let response = ui.add(
+                            egui::Label::new(icao_string).selectable(false),
                         );
+                        if profile.has_duplicate_error && response.hovered() {
+                            response.on_hover_text("There is a duplicate Profile of the Same airport. Consider deleting one of them.");
+                        }
                     });
                     row.col(|ui| {
                         ui.add(

@@ -69,12 +69,21 @@ pub fn get_installed_gsx_profiles(
                 warn!("Airport with icao {} not found!", icao_code);
                 continue;
             };
-            let config = ProfileFile::new(
+            let mut config = ProfileFile::new(
                 file_name,
                 path_entry.clone(),
                 airport.to_owned().clone(),
                 python_file,
             );
+
+            for (_, profile_file) in installed_config_files.iter_mut() {
+                if profile_file.airport.icao == config.airport.icao {
+                    warn!("Duplicate Profile for Airport {}", config.airport.icao);
+                    profile_file.has_duplicate_error = true;
+                    config.has_duplicate_error = true;
+                }
+            }
+            
             installed_config_files.insert(config.id.clone(), config);
         };
     }
