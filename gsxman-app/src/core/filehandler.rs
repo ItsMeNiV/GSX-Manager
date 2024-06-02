@@ -41,51 +41,52 @@ pub fn get_installed_gsx_profiles(
     let mut installed_config_files: HashMap<Uuid, ProfileFile> = HashMap::new();
     let gsx_path = util::get_gsx_profile_path();
 
-    let entries = fs::read_dir(gsx_path)
-        .unwrap()
-        .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, io::Error>>()
-        .unwrap();
+    if let Ok(gsx_dir) = fs::read_dir(gsx_path) {
+        let entries = gsx_dir
+            .map(|res| res.map(|e| e.path()))
+            .collect::<Result<Vec<_>, io::Error>>()
+            .unwrap();
 
-    let gsx_regex = Regex::new(r"^\w{4}-.*\.(ini|py)").unwrap();
-    let profile_file_regex = Regex::new(r"^(?<icao_code>\w{4})-.*\.ini").unwrap();
+        let gsx_regex = Regex::new(r"^\w{4}-.*\.(ini|py)").unwrap();
+        let profile_file_regex = Regex::new(r"^(?<icao_code>\w{4})-.*\.ini").unwrap();
 
-    for path_entry in &entries {
-        let file_name = String::from(path_entry.file_name().unwrap().to_str().unwrap());
+        for path_entry in &entries {
+            let file_name = String::from(path_entry.file_name().unwrap().to_str().unwrap());
 
-        if !gsx_regex.is_match(&file_name) {
-            warn!("File {} is not a GSX Profile file", &file_name);
-            continue;
-        }
-
-        if let Some(caps) = profile_file_regex.captures(&file_name) {
-            debug!("File {} is a .ini profile", &file_name);
-
-            let icao_code = &caps["icao_code"].to_uppercase();
-
-            let python_file = get_associated_python_file(&path_entry);
-
-            let Some(airport) = airport_data.get(&String::from(icao_code)) else {
-                warn!("Airport with icao {} not found!", icao_code);
+            if !gsx_regex.is_match(&file_name) {
+                warn!("File {} is not a GSX Profile file", &file_name);
                 continue;
-            };
-            let mut config = ProfileFile::new(
-                file_name,
-                path_entry.clone(),
-                airport.to_owned().clone(),
-                python_file,
-            );
-
-            for (_, profile_file) in installed_config_files.iter_mut() {
-                if profile_file.airport.icao == config.airport.icao {
-                    warn!("Duplicate Profile for Airport {}", config.airport.icao);
-                    profile_file.has_duplicate_error = true;
-                    config.has_duplicate_error = true;
-                }
             }
-            
-            installed_config_files.insert(config.id.clone(), config);
-        };
+
+            if let Some(caps) = profile_file_regex.captures(&file_name) {
+                debug!("File {} is a .ini profile", &file_name);
+
+                let icao_code = &caps["icao_code"].to_uppercase();
+
+                let python_file = get_associated_python_file(&path_entry);
+
+                let Some(airport) = airport_data.get(&String::from(icao_code)) else {
+                    warn!("Airport with icao {} not found!", icao_code);
+                    continue;
+                };
+                let mut config = ProfileFile::new(
+                    file_name,
+                    path_entry.clone(),
+                    airport.to_owned().clone(),
+                    python_file,
+                );
+
+                for (_, profile_file) in installed_config_files.iter_mut() {
+                    if profile_file.airport.icao == config.airport.icao {
+                        warn!("Duplicate Profile for Airport {}", config.airport.icao);
+                        profile_file.has_duplicate_error = true;
+                        config.has_duplicate_error = true;
+                    }
+                }
+
+                installed_config_files.insert(config.id.clone(), config);
+            };
+        }
     }
 
     installed_config_files
@@ -257,7 +258,7 @@ pub fn delete_config_file(airport_path_to_delete: &PathBuf) -> bool {
                 return false;
             }
         },
-        _ => return false
+        _ => return false,
     }
 }
 

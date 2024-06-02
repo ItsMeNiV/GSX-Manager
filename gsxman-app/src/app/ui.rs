@@ -37,18 +37,22 @@ impl eframe::App for GsxmanApp {
             });
         });
 
+        let mut left_panel_width = 0.0;
+
         egui::SidePanel::left(Id::new("map_panel"))
             .frame(rimless)
-            .resizable(false)
-            .exact_width((content_width / 2.0) - 5.0)
+            .resizable(true)
+            .default_width((content_width / 2.0) - 5.0)
+            .min_width(50.0)
             .show(ctx, |ui| {
                 map_panel::update_map_panel(self, ui);
+                left_panel_width = ui.available_width();
             });
 
         egui::SidePanel::right(Id::new("profilelist_panel"))
             .frame(rimless)
             .resizable(false)
-            .exact_width((content_width / 2.0) - 5.0)
+            .exact_width(content_width - left_panel_width)
             .show(ctx, |ui| {
                 table_panel::update_table_panel(self, ui);
             });
