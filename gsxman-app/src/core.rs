@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use chrono::{DateTime, Utc};
 use geoutils::Location;
 use uuid::Uuid;
 use walkers::{extras::Place, Position};
@@ -41,6 +42,7 @@ pub struct ProfileFile {
     pub py_file_location: Option<PathBuf>,
     pub profile_data: Option<GsxProfile>,
     pub has_duplicate_error: bool,
+    pub last_modified: DateTime<Utc>,
 }
 
 impl GsxProfile {
@@ -60,6 +62,7 @@ impl ProfileFile {
         file_location: PathBuf,
         airport: Airport,
         py_file_location: Option<PathBuf>,
+        last_modified: DateTime<Utc>
     ) -> ProfileFile {
         ProfileFile {
             id: Uuid::new_v4(),
@@ -69,6 +72,7 @@ impl ProfileFile {
             py_file_location,
             profile_data: None,
             has_duplicate_error: false,
+            last_modified,
         }
     }
 }

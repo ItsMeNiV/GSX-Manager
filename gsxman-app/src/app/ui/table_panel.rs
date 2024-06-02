@@ -1,5 +1,5 @@
-use egui::{Color32, RichText, Ui};
-use egui_extras::{Column, TableBuilder};
+use egui::{Align, Color32, RichText, Ui};
+use egui_extras::{Column, Size, StripBuilder, TableBuilder};
 use itertools::Itertools;
 use walkers::Position;
 
@@ -8,11 +8,17 @@ use crate::{app::GsxmanApp, core::filehandler};
 use super::{map_panel, UIState};
 
 pub fn update_table_panel(app: &mut GsxmanApp, ui: &mut Ui) {
-    match app.ui_state {
-        UIState::Overview => update_overview_table(app, ui),
-        UIState::Details => update_detail_table(app, ui),
-        UIState::SectionDetails => update_section_detail_table(app, ui),
-    }
+    StripBuilder::new(ui).size(Size::remainder()).vertical(|mut strip| {
+        strip.cell(|ui| {
+            egui::ScrollArea::horizontal().show(ui, |ui| {
+                match app.ui_state {
+                    UIState::Overview => update_overview_table(app, ui),
+                    UIState::Details => update_detail_table(app, ui),
+                    UIState::SectionDetails => update_section_detail_table(app, ui),
+                }
+            });
+        });
+    });
 }
 
 fn update_section_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
@@ -112,6 +118,10 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
 
     table = table.sense(egui::Sense::click());
 
+    if let Some(scroll_to_row) = &app.scroll_to_row {
+        table = table.scroll_to_row(*scroll_to_row, Some(Align::Center));
+    }
+
     let mut clicked_section_id = None;
     let mut new_ui_state = None;
 
@@ -210,6 +220,7 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
             _ => {}
         }
     }
+    app.scroll_to_row = None;
 }
 
 fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
@@ -217,14 +228,20 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
     ui.separator();
     let mut table = TableBuilder::new(ui)
         .striped(true)
-        .resizable(false)
+        .resizable(true)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
         .column(Column::auto().clip(false))
+        .column(Column::auto().clip(false))
+        .column(Column::initial(200.0).clip(true))
         .column(Column::auto().clip(false))
         .column(Column::auto().clip(false))
         .column(Column::remainder().clip(false));
 
     table = table.sense(egui::Sense::click());
+
+    if let Some(scroll_to_row) = app.scroll_to_row {
+        table = table.scroll_to_row(scroll_to_row, Some(Align::Center));
+    }
 
     table
         .header(20.0, |mut header| {
@@ -238,6 +255,12 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
                 ui.add(
                     egui::Label::new(RichText::new("File Location").heading()).selectable(false),
                 );
+            });
+            header.col(|ui| {
+                ui.add(egui::Label::new(RichText::new("Creator").heading()).selectable(false));
+            });
+            header.col(|ui| {
+                ui.add(egui::Label::new(RichText::new("Last modified").heading()).selectable(false));
             });
             header.col(|ui| {
                 ui.add(egui::Label::new(RichText::new("Actions").heading()).selectable(false));
@@ -283,6 +306,22 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
                         );
                     });
                     row.col(|ui| {
+                        let creator_string = match &profile.profile_data {
+                            Some(profile_data) => profile_data.creator.clone(),
+                            None => String::new()
+                        };
+                        ui.add(
+                            egui::Label::new(creator_string)
+                                .selectable(false),
+                        );
+                    });
+                    row.col(|ui| {
+                        ui.add(
+                            egui::Label::new(profile.last_modified.format("%d/%m/%Y %T").to_string())
+                                .selectable(false),
+                        );
+                    });
+                    row.col(|ui| {
                         if ui.button("Delete Profile").clicked() {
                             app.selected_profile_id = Some(profile.id.clone());
                             handle_profile_delete(app);
@@ -307,6 +346,7 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
                 });
             }
         });
+        app.scroll_to_row = None;
 }
 
 fn handle_profile_delete(app: &mut GsxmanApp) {
@@ -319,7 +359,9 @@ fn handle_profile_delete(app: &mut GsxmanApp) {
 
 fn handle_profile_details(app: &mut GsxmanApp) {
     if let Some(profile) = app.get_selected_profile_mut() {
-        filehandler::load_profile_data(profile);
+        if profile.profile_data.is_none() {
+            filehandler::load_profile_data(profile);
+        }
 
         if let Some(selected_profile) = app.get_selected_profile() {
             let zoom_pos = Position::from_lat_lon(

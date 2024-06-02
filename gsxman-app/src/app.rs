@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use eframe::egui;
-use egui::{Context, Style, Visuals};
+use egui::{Context, Style, Vec2, Visuals};
 use uuid::Uuid;
 use walkers::{MapMemory, sources, Tiles};
 
@@ -29,6 +29,7 @@ struct GsxmanApp {
     click_watcher: ui::plugins::ClickWatcher,
     selected_profile_id: Option<Uuid>,
     selected_section_id: Option<Uuid>,
+    scroll_to_row: Option<usize>,
     ui_state: UIState,
 }
 
@@ -60,6 +61,7 @@ impl GsxmanApp {
             },
             selected_profile_id: None,
             selected_section_id: None,
+            scroll_to_row: None,
             ui_state: UIState::Overview,
         }
     }
@@ -110,7 +112,8 @@ pub fn start_app(app_config: AppConfig) -> Result<(), eframe::Error> {
             .with_icon(
                 eframe::icon_data::from_png_bytes(&include_bytes!("../res/icon.png")[..])
                     .expect("Failed to load icon"),
-            ),
+            )
+            .with_min_inner_size(Vec2::new(1400.0, 500.0)),
         ..Default::default()
     };
 

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, io, path::PathBuf};
+use std::{collections::HashMap, fs, io, path::PathBuf, time::SystemTime};
 
 use geoutils::Location;
 use regex::Regex;
@@ -52,6 +52,12 @@ pub fn get_installed_gsx_profiles(
 
         for path_entry in &entries {
             let file_name = String::from(path_entry.file_name().unwrap().to_str().unwrap());
+            let mut last_modified = SystemTime::UNIX_EPOCH;
+            if let Ok(metadata) = path_entry.metadata() {
+                if let Ok(modified) = metadata.modified() {
+                    last_modified = modified;
+                }
+            }
 
             if !gsx_regex.is_match(&file_name) {
                 warn!("File {} is not a GSX Profile file", &file_name);
@@ -74,6 +80,7 @@ pub fn get_installed_gsx_profiles(
                     path_entry.clone(),
                     airport.to_owned().clone(),
                     python_file,
+                    last_modified.into()
                 );
 
                 for (_, profile_file) in installed_config_files.iter_mut() {
@@ -83,6 +90,8 @@ pub fn get_installed_gsx_profiles(
                         config.has_duplicate_error = true;
                     }
                 }
+
+                load_profile_data(&mut config);
 
                 installed_config_files.insert(config.id.clone(), config);
             };

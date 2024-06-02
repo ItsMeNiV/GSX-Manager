@@ -1,4 +1,5 @@
 use egui::{Color32, Ui, Vec2};
+use itertools::Itertools;
 use walkers::{
     extras::{Place, Places, Style},
     Map, Position, Projector,
@@ -73,19 +74,25 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
         if let Some(clicked_label) = &app.click_watcher.clicked_label {
             match app.ui_state {
                 UIState::Overview => {
-                    for (_, profile) in app.installed_gsx_profiles.iter() {
+                    let mut row_index = 0;
+                    for (_, profile) in app.installed_gsx_profiles.iter().sorted_by(|a, b| Ord::cmp(&a.1.airport.icao, &b.1.airport.icao)) {
                         if clicked_label.to_owned() == profile.airport.icao {
                             app.selected_profile_id = Some(profile.id.clone());
+                            app.scroll_to_row = Some(row_index);
                         }
+                        row_index += 1;
                     }
                 },
                 UIState::Details => {
                     for (_, profile) in app.installed_gsx_profiles.iter() {
                         if let Some(profile_data) = profile.profile_data.as_ref() {
-                            for section in profile_data.sections.iter() {
+                            let mut row_index = 0;
+                            for section in profile_data.sections.iter().sorted_by(|a, b| Ord::cmp(&a.name, &b.name)) {
                                 if clicked_label.to_owned() == section.name.to_owned() {
                                     app.selected_section_id = Some(section.id.clone());
+                                    app.scroll_to_row = Some(row_index);
                                 }
+                                row_index += 1;
                             }
                         }
                     }

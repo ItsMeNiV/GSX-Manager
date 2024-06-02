@@ -42,7 +42,7 @@ impl eframe::App for GsxmanApp {
         egui::SidePanel::left(Id::new("map_panel"))
             .frame(rimless)
             .resizable(true)
-            .default_width((content_width / 2.0) - 5.0)
+            .default_width((content_width / 2.5) - 5.0)
             .min_width(50.0)
             .show(ctx, |ui| {
                 map_panel::update_map_panel(self, ui);
