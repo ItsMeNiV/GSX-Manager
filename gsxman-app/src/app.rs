@@ -31,6 +31,7 @@ struct GsxmanApp {
     selected_section_id: Option<Uuid>,
     scroll_to_row: Option<usize>,
     ui_state: UIState,
+    filter_text: String,
 }
 
 impl Default for AppConfig {
@@ -63,6 +64,7 @@ impl GsxmanApp {
             selected_section_id: None,
             scroll_to_row: None,
             ui_state: UIState::Overview,
+            filter_text: String::new()
         }
     }
 

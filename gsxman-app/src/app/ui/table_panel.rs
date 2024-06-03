@@ -3,22 +3,34 @@ use egui_extras::{Column, Size, StripBuilder, TableBuilder};
 use itertools::Itertools;
 use walkers::Position;
 
-use crate::{app::GsxmanApp, core::filehandler};
+use crate::{
+    app::GsxmanApp,
+    core::filehandler,
+};
 
-use super::{map_panel, UIState};
+use super::{filter_profile_details, filter_profiles, map_panel, UIState};
 
 pub fn update_table_panel(app: &mut GsxmanApp, ui: &mut Ui) {
-    StripBuilder::new(ui).size(Size::remainder()).vertical(|mut strip| {
-        strip.cell(|ui| {
-            egui::ScrollArea::horizontal().show(ui, |ui| {
-                match app.ui_state {
+    StripBuilder::new(ui)
+        .size(Size::exact(25.0))
+        .size(Size::remainder())
+        .vertical(|mut strip| {
+            strip.cell(|ui| {
+                ui.horizontal(|ui| {
+                    ui.add(egui::TextEdit::singleline(&mut app.filter_text).hint_text("Filter"));
+                    if ui.button("Clear").clicked() {
+                        app.filter_text.clear();
+                    };
+                });
+            });
+            strip.cell(|ui| {
+                egui::ScrollArea::horizontal().show(ui, |ui| match app.ui_state {
                     UIState::Overview => update_overview_table(app, ui),
                     UIState::Details => update_detail_table(app, ui),
                     UIState::SectionDetails => update_section_detail_table(app, ui),
-                }
+                });
             });
         });
-    });
 }
 
 fn update_section_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
@@ -50,50 +62,61 @@ fn update_section_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
             });
         })
         .body(|mut body| {
+            let filter_text = app.filter_text.clone().to_lowercase();
+            let filter_text_str = filter_text.as_str();
             if let Some(pushback_position_left) = &selected_section.pushback_position_left {
                 if let Some(pushback_label_left) = &selected_section.pushback_label_left {
-                    body.row(30.0, |mut row| {
-                        row.col(|ui| {
-                            ui.add(
-                                egui::Label::new(pushback_label_left.to_owned()).selectable(false),
-                            );
+                    if pushback_label_left.to_lowercase().contains(filter_text_str) {
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Label::new(pushback_label_left.to_owned())
+                                        .selectable(false),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Label::new(pushback_position_left.lat().to_string())
+                                        .selectable(false),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Label::new(pushback_position_left.lon().to_string())
+                                        .selectable(false),
+                                );
+                            });
                         });
-                        row.col(|ui| {
-                            ui.add(
-                                egui::Label::new(pushback_position_left.lat().to_string())
-                                    .selectable(false),
-                            );
-                        });
-                        row.col(|ui| {
-                            ui.add(
-                                egui::Label::new(pushback_position_left.lon().to_string())
-                                    .selectable(false),
-                            );
-                        });
-                    });
+                    }
                 }
             }
             if let Some(pushback_position_right) = &selected_section.pushback_position_right {
                 if let Some(pushback_label_right) = &selected_section.pushback_label_right {
-                    body.row(30.0, |mut row| {
-                        row.col(|ui| {
-                            ui.add(
-                                egui::Label::new(pushback_label_right.to_owned()).selectable(false),
-                            );
+                    if pushback_label_right
+                        .to_lowercase()
+                        .contains(filter_text_str)
+                    {
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Label::new(pushback_label_right.to_owned())
+                                        .selectable(false),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Label::new(pushback_position_right.lat().to_string())
+                                        .selectable(false),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Label::new(pushback_position_right.lon().to_string())
+                                        .selectable(false),
+                                );
+                            });
                         });
-                        row.col(|ui| {
-                            ui.add(
-                                egui::Label::new(pushback_position_right.lat().to_string())
-                                    .selectable(false),
-                            );
-                        });
-                        row.col(|ui| {
-                            ui.add(
-                                egui::Label::new(pushback_position_right.lon().to_string())
-                                    .selectable(false),
-                            );
-                        });
-                    });
+                    }
                 }
             }
         });
@@ -147,7 +170,11 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
                 .unwrap()
                 .sections
                 .clone();
-            let sections_iter = sections.iter().sorted_by(|a, b| Ord::cmp(&a.name, &b.name));
+            let filter_text = app.filter_text.clone();
+            let sections_iter = sections
+                .iter()
+                .sorted_by(|a, b| Ord::cmp(&a.name, &b.name))
+                .filter(|&section| filter_profile_details(&filter_text, section));
             for section in sections_iter {
                 body.row(30.0, |mut row| {
                     if let Some(selected_section_id) = app.selected_section_id.as_ref() {
@@ -215,6 +242,7 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
                         selected_section.position.lon(),
                     );
                     map_panel::zoom_map_to_position(app, zoom_pos, 2);
+                    app.filter_text.clear();
                 }
             }
             _ => {}
@@ -230,12 +258,12 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
         .striped(true)
         .resizable(true)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-        .column(Column::auto().clip(false))
-        .column(Column::auto().clip(false))
-        .column(Column::initial(200.0).clip(true))
-        .column(Column::auto().clip(false))
-        .column(Column::auto().clip(false))
-        .column(Column::remainder().clip(false));
+        .column(Column::auto().clip(false)) //ICAO
+        .column(Column::auto().clip(false)) //Airport Name
+        .column(Column::initial(400.0).clip(true)) //File Location
+        .column(Column::auto().clip(false)) //Creator
+        .column(Column::auto().clip(false)) //Last Modified
+        .column(Column::remainder().clip(false)); //Actions
 
     table = table.sense(egui::Sense::click());
 
@@ -267,13 +295,15 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
             });
         })
         .body(|mut body| {
-            let mut installed_profiles = app.installed_gsx_profiles.clone();
+            let filter_text = app.filter_text.clone();
+            let installed_profiles = app.installed_gsx_profiles.clone();
             let installed_profiles_iter = installed_profiles
-                .iter_mut()
-                .sorted_by(|a, b| Ord::cmp(&a.1.airport.icao, &b.1.airport.icao));
+                .iter()
+                .sorted_by(|a, b| Ord::cmp(&a.1.airport.icao, &b.1.airport.icao))
+                .filter(|&(_, profile)| filter_profiles(&filter_text, profile));
 
             for (id, profile) in installed_profiles_iter {
-                body.row(30.0, |mut row| {
+                body.row(40.0, |mut row| {
                     if let Some(selected_profile_id) = app.selected_profile_id {
                         row.set_selected(selected_profile_id == *id);
                     }
@@ -322,14 +352,18 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
                         );
                     });
                     row.col(|ui| {
-                        if ui.button("Delete Profile").clicked() {
-                            app.selected_profile_id = Some(profile.id.clone());
-                            handle_profile_delete(app);
-                        }
-                        if ui.button("Details").clicked() {
-                            app.selected_profile_id = Some(profile.id.clone());
-                            handle_profile_details(app);
-                        }
+                        ui.vertical(|ui| {
+                            if ui.button("Delete Profile").clicked() {
+                                app.selected_profile_id = Some(profile.id.clone());
+                                handle_profile_delete(app);
+                                app.filter_text.clear();
+                            }
+                            if ui.button("Details").clicked() {
+                                app.selected_profile_id = Some(profile.id.clone());
+                                handle_profile_details(app);
+                                app.filter_text.clear();
+                            }
+                        });
                     });
 
                     if row.response().clicked() {
@@ -346,7 +380,7 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
                 });
             }
         });
-        app.scroll_to_row = None;
+    app.scroll_to_row = None;
 }
 
 fn handle_profile_delete(app: &mut GsxmanApp) {

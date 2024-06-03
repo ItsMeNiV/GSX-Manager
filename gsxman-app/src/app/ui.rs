@@ -1,6 +1,6 @@
 use egui::{Id, Margin};
 
-use crate::core::constants;
+use crate::core::{constants, GsxSection, ProfileFile};
 
 use super::GsxmanApp;
 
@@ -57,4 +57,37 @@ impl eframe::App for GsxmanApp {
                 table_panel::update_table_panel(self, ui);
             });
     }
+}
+
+fn filter_profiles(filter_text: &String, profile: &ProfileFile) -> bool {
+    let mut should_display;
+
+    if filter_text.is_empty() {
+        return true;
+    }
+
+    let filter_text_lowercase = filter_text.to_lowercase();
+    let filter_str = filter_text_lowercase.as_str();
+
+    should_display = profile.airport.icao.to_lowercase().contains(filter_str)
+        || profile.airport.name.to_lowercase().contains(filter_str);
+
+    if !should_display {
+        if let Some(profile_data) = profile.profile_data.clone() {
+            should_display = profile_data.creator.to_lowercase().contains(filter_str);
+        }
+    }
+
+    should_display
+}
+
+fn filter_profile_details(filter_text: &String, section: &GsxSection) -> bool {
+    if filter_text.is_empty() {
+        return true;
+    }
+
+    let filter_text_lowercase = filter_text.to_lowercase();
+    let filter_str = filter_text_lowercase.as_str();
+
+    section.name.to_lowercase().contains(filter_str)
 }

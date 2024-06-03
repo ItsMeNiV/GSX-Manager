@@ -16,11 +16,13 @@ pub fn update_menu_bar_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                 if ui.button("Back to Overview").clicked() {
                     app.selected_section_id = None;
                     app.ui_state = UIState::Overview;
+                    app.filter_text.clear();
                 }
             },
             UIState::SectionDetails => {
                 if ui.button("Back to Profile Details").clicked() {
                     app.ui_state = UIState::Details;
+                    app.filter_text.clear();
                 }
             }
         };
