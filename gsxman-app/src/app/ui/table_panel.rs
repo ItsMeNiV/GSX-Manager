@@ -199,13 +199,13 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
                             clicked_section_id = {
                                 let id;
                                 if let Some(selected_section_id) = app.selected_section_id {
-                                    if selected_section_id == section.id.clone() {
+                                    if selected_section_id == section.id {
                                         id = None;
                                     } else {
-                                        id = Some(section.id.clone())
+                                        id = Some(section.id)
                                     }
                                 } else {
-                                    id = Some(section.id.clone())
+                                    id = Some(section.id)
                                 }
                                 id
                             };
@@ -214,7 +214,7 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
                     });
 
                     if row.response().clicked() {
-                        clicked_section_id = Some(section.id.clone());
+                        clicked_section_id = Some(section.id);
                     }
                 });
             }
@@ -225,27 +225,24 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
             if *selected_section_id == clicked_section_id {
                 app.selected_section_id = None
             } else {
-                app.selected_section_id = Some(clicked_section_id.clone());
+                app.selected_section_id = Some(clicked_section_id);
             }
         } else {
-            app.selected_section_id = Some(clicked_section_id.clone());
+            app.selected_section_id = Some(clicked_section_id);
         }
     }
     if let Some(new_ui_state) = new_ui_state {
         app.ui_state = new_ui_state;
 
-        match app.ui_state {
-            UIState::SectionDetails => {
-                if let Some(selected_section) = app.get_selected_section() {
-                    let zoom_pos = Position::from_lat_lon(
-                        selected_section.position.lat(),
-                        selected_section.position.lon(),
-                    );
-                    map_panel::zoom_map_to_position(app, zoom_pos, 2);
-                    app.filter_text.clear();
-                }
+        if let UIState::SectionDetails = app.ui_state {
+            if let Some(selected_section) = app.get_selected_section() {
+                let zoom_pos = Position::from_lat_lon(
+                    selected_section.position.lat(),
+                    selected_section.position.lon(),
+                );
+                map_panel::zoom_map_to_position(app, zoom_pos, 2);
+                app.filter_text.clear();
             }
-            _ => {}
         }
     }
     app.scroll_to_row = None;
@@ -354,12 +351,12 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
                     row.col(|ui| {
                         ui.vertical(|ui| {
                             if ui.button("Delete Profile").clicked() {
-                                app.selected_profile_id = Some(profile.id.clone());
+                                app.selected_profile_id = Some(profile.id);
                                 handle_profile_delete(app);
                                 app.filter_text.clear();
                             }
                             if ui.button("Details").clicked() {
-                                app.selected_profile_id = Some(profile.id.clone());
+                                app.selected_profile_id = Some(profile.id);
                                 handle_profile_details(app);
                                 app.filter_text.clear();
                             }
@@ -371,10 +368,10 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
                             if selected_profile_id == profile.id {
                                 app.selected_profile_id = None
                             } else {
-                                app.selected_profile_id = Some(profile.id.clone());
+                                app.selected_profile_id = Some(profile.id);
                             }
                         } else {
-                            app.selected_profile_id = Some(profile.id.clone());
+                            app.selected_profile_id = Some(profile.id);
                         }
                     }
                 });

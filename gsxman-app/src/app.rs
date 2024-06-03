@@ -95,7 +95,7 @@ impl GsxmanApp {
             if let Some(profile) = self.get_selected_profile() {
                 if let Some(profile_data) = &profile.profile_data {
                     for section in profile_data.sections.iter() {
-                        if section.id.clone() == id {
+                        if section.id == id {
                             selected_section = Some(section);
                             break;
                         }

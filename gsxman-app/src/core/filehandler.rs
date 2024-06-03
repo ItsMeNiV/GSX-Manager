@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, io, path::PathBuf, time::SystemTime};
+use std::{collections::HashMap, fs, io, path::{Path, PathBuf}, time::SystemTime};
 
 use geoutils::Location;
 use regex::Regex;
@@ -69,7 +69,7 @@ pub fn get_installed_gsx_profiles(
 
                 let icao_code = &caps["icao_code"].to_uppercase();
 
-                let python_file = get_associated_python_file(&path_entry);
+                let python_file = get_associated_python_file(path_entry);
 
                 let Some(airport) = airport_data.get(&String::from(icao_code)) else {
                     warn!("Airport with icao {} not found!", icao_code);
@@ -93,7 +93,7 @@ pub fn get_installed_gsx_profiles(
 
                 load_profile_data(&mut config);
 
-                installed_config_files.insert(config.id.clone(), config);
+                installed_config_files.insert(config.id, config);
             };
         }
     }
@@ -103,13 +103,10 @@ pub fn get_installed_gsx_profiles(
 
 pub fn load_profile_data(file: &mut ProfileFile) {
     let parse_result = gsx_ini_parser::parse_file(file.file_location.as_os_str().to_str().unwrap());
-    match parse_result {
-        Err(error) => {
-            error!("{}", error);
-            return;
-        }
-        Ok(_) => {}
-    };
+    if let Err(error) = parse_result {
+        error!("{}", error);
+        return;
+    }
     let data_map = parse_result.unwrap();
     let mut profile_data = GsxProfile::new();
 
@@ -177,9 +174,9 @@ pub fn load_profile_data(file: &mut ProfileFile) {
 }
 
 #[inline]
-fn position_string_to_position(string_value: &String) -> Option<Position> {
+fn position_string_to_position(string_value: &str) -> Option<Position> {
     let mut pos = Position::from_lat_lon(0.0, 0.0);
-    let coord_strings: Vec<&str> = string_value.split(" ").collect();
+    let coord_strings: Vec<&str> = string_value.split(' ').collect();
     let lat = coord_strings[0].parse::<f64>();
     let lon = coord_strings[1].parse::<f64>();
     if lat.is_ok() && lon.is_ok() {
@@ -195,12 +192,12 @@ pub fn import_config_file_dialog() {
         .pick_file()
     {
         let to_path = util::get_gsx_profile_path().join(path.file_name().unwrap());
-        match fs::copy(&path, &to_path) {
+        match fs::copy(&path, to_path) {
             Ok(_) => {
                 if let Some(python_file) = get_associated_python_file(&path) {
                     let to_path =
                         util::get_gsx_profile_path().join(python_file.file_name().unwrap());
-                    match fs::copy(&path, &to_path) {
+                    match fs::copy(&path, to_path) {
                         Ok(_) => {}
                         Err(error) => {
                             error!("{:?}", error);
@@ -260,18 +257,18 @@ pub fn delete_config_file(airport_path_to_delete: &PathBuf) -> bool {
                         }
                     }
                 }
-                return true;
+                true
             }
             Err(error) => {
                 error!("{}", error);
-                return false;
+                false
             }
         },
-        _ => return false,
+        _ => false,
     }
 }
 
-fn get_associated_python_file(gsx_profile_path: &PathBuf) -> Option<PathBuf> {
+fn get_associated_python_file(gsx_profile_path: &Path) -> Option<PathBuf> {
     let gsx_profile_file_name = gsx_profile_path.file_name().unwrap().to_str().unwrap();
     let gsx_profile_file_dir = gsx_profile_path.parent().unwrap();
     let possible_python_file_name = format!(

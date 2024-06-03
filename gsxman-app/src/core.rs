@@ -82,9 +82,9 @@ pub struct GsxPlace(pub Place);
 impl GsxPlace {
     pub fn to_place(&self) -> Place {
         Place {
-            position: self.0.position.clone(),
+            position: self.0.position,
             label: self.0.label.clone(),
-            symbol: self.0.symbol.clone(),
+            symbol: self.0.symbol,
             style: self.0.style.clone(),
         }
     }
@@ -92,14 +92,12 @@ impl GsxPlace {
 
 impl Clone for GsxPlace {
     fn clone(&self) -> Self {
-        Self {
-            0: Place {
-                position: self.0.position.clone(),
+        Self(Place {
+                position: self.0.position,
                 label: self.0.label.clone(),
-                symbol: self.0.symbol.clone(),
+                symbol: self.0.symbol,
                 style: self.0.style.clone(),
-            },
-        }
+            })
     }
 }
 

@@ -59,7 +59,7 @@ impl eframe::App for GsxmanApp {
     }
 }
 
-fn filter_profiles(filter_text: &String, profile: &ProfileFile) -> bool {
+fn filter_profiles(filter_text: &str, profile: &ProfileFile) -> bool {
     let mut should_display;
 
     if filter_text.is_empty() {
@@ -81,7 +81,7 @@ fn filter_profiles(filter_text: &String, profile: &ProfileFile) -> bool {
     should_display
 }
 
-fn filter_profile_details(filter_text: &String, section: &GsxSection) -> bool {
+fn filter_profile_details(filter_text: &str, section: &GsxSection) -> bool {
     if filter_text.is_empty() {
         return true;
     }

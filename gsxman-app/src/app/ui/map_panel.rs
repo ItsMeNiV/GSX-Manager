@@ -93,7 +93,7 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                                 .sorted_by(|a, b| Ord::cmp(&a.name, &b.name))
                                 .filter(|&section| filter_profile_details(&filter_text, section)).enumerate()
                             {
-                                if *clicked_label == section.name.to_owned() {
+                                if *clicked_label == section.name {
                                     app.selected_section_id = Some(section.id);
                                     app.scroll_to_row = Some(row_index);
                                     break;
@@ -280,9 +280,6 @@ pub fn zoom_map_to_position(app: &mut GsxmanApp, position: Position, zoom_level:
     // First zoom in all the way (until zoom_in() returns Err(InvalidZoom)), then zoom out as far as we need
     while app.map_memory.zoom_in().is_ok() {}
     for _ in 0..zoom_level {
-        match app.map_memory.zoom_out() {
-            Ok(_) => {}
-            Err(_) => {}
-        };
+        let _ = app.map_memory.zoom_out();
     }
 }
