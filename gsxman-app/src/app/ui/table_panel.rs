@@ -1,14 +1,10 @@
 use egui::{Align, Color32, RichText, Ui};
 use egui_extras::{Column, Size, StripBuilder, TableBuilder};
 use itertools::Itertools;
-use walkers::Position;
 
-use crate::{
-    app::GsxmanApp,
-    core::filehandler,
-};
+use crate::app::GsxmanApp;
 
-use super::{filter_profile_details, filter_profiles, map_panel, UIState};
+use super::{filter_profile_details, filter_profiles, UIState};
 
 pub fn update_table_panel(app: &mut GsxmanApp, ui: &mut Ui) {
     StripBuilder::new(ui)
@@ -24,7 +20,7 @@ pub fn update_table_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                 });
             });
             strip.cell(|ui| {
-                egui::ScrollArea::horizontal().show(ui, |ui| match app.ui_state {
+                egui::ScrollArea::horizontal().auto_shrink([false, false]).show(ui, |ui| match app.ui_state {
                     UIState::Overview => update_overview_table(app, ui),
                     UIState::Details => update_detail_table(app, ui),
                     UIState::SectionDetails => update_section_detail_table(app, ui),
@@ -67,7 +63,7 @@ fn update_section_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
             if let Some(pushback_position_left) = &selected_section.pushback_position_left {
                 if let Some(pushback_label_left) = &selected_section.pushback_label_left {
                     if pushback_label_left.to_lowercase().contains(filter_text_str) {
-                        body.row(30.0, |mut row| {
+                        body.row(40.0, |mut row| {
                             row.col(|ui| {
                                 ui.add(
                                     egui::Label::new(pushback_label_left.to_owned())
@@ -96,7 +92,7 @@ fn update_section_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
                         .to_lowercase()
                         .contains(filter_text_str)
                     {
-                        body.row(30.0, |mut row| {
+                        body.row(40.0, |mut row| {
                             row.col(|ui| {
                                 ui.add(
                                     egui::Label::new(pushback_label_right.to_owned())
@@ -126,15 +122,13 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
     let selected_profile = app.get_selected_profile().unwrap();
     ui.heading(format!(
         "Details {} by {}",
-        selected_profile.file_name,
-        selected_profile.profile_data.as_ref().unwrap().creator
+        selected_profile.file_name, selected_profile.creator
     ));
     ui.separator();
     let mut table = TableBuilder::new(ui)
         .striped(true)
         .resizable(false)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-        .column(Column::auto().clip(false))
         .column(Column::auto().clip(false))
         .column(Column::auto().clip(false))
         .column(Column::remainder().clip(false));
@@ -146,7 +140,6 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
     }
 
     let mut clicked_section_id = None;
-    let mut new_ui_state = None;
 
     table
         .header(20.0, |mut header| {
@@ -158,9 +151,6 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
             });
             header.col(|ui| {
                 ui.add(egui::Label::new(RichText::new("Longitude").heading()).selectable(false));
-            });
-            header.col(|ui| {
-                ui.add(egui::Label::new(RichText::new("Actions").heading()).selectable(false));
             });
         })
         .body(|mut body| {
@@ -176,7 +166,7 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
                 .sorted_by(|a, b| Ord::cmp(&a.name, &b.name))
                 .filter(|&section| filter_profile_details(&filter_text, section));
             for section in sections_iter {
-                body.row(30.0, |mut row| {
+                body.row(40.0, |mut row| {
                     if let Some(selected_section_id) = app.selected_section_id.as_ref() {
                         row.set_selected(*selected_section_id == section.id);
                     }
@@ -193,24 +183,6 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
                         ui.add(
                             egui::Label::new(section.position.lon().to_string()).selectable(false),
                         );
-                    });
-                    row.col(|ui| {
-                        if ui.button("Show associated Positions").clicked() {
-                            clicked_section_id = {
-                                let id;
-                                if let Some(selected_section_id) = app.selected_section_id {
-                                    if selected_section_id == section.id {
-                                        id = None;
-                                    } else {
-                                        id = Some(section.id)
-                                    }
-                                } else {
-                                    id = Some(section.id)
-                                }
-                                id
-                            };
-                            new_ui_state = Some(UIState::SectionDetails);
-                        }
                     });
 
                     if row.response().clicked() {
@@ -231,20 +203,6 @@ fn update_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
             app.selected_section_id = Some(clicked_section_id);
         }
     }
-    if let Some(new_ui_state) = new_ui_state {
-        app.ui_state = new_ui_state;
-
-        if let UIState::SectionDetails = app.ui_state {
-            if let Some(selected_section) = app.get_selected_section() {
-                let zoom_pos = Position::from_lat_lon(
-                    selected_section.position.lat(),
-                    selected_section.position.lon(),
-                );
-                map_panel::zoom_map_to_position(app, zoom_pos, 2);
-                app.filter_text.clear();
-            }
-        }
-    }
     app.scroll_to_row = None;
 }
 
@@ -256,11 +214,10 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
         .resizable(true)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
         .column(Column::auto().clip(false)) //ICAO
-        .column(Column::auto().clip(false)) //Airport Name
+        .column(Column::auto().clip(true)) //Airport Name
         .column(Column::initial(400.0).clip(true)) //File Location
         .column(Column::auto().clip(false)) //Creator
-        .column(Column::auto().clip(false)) //Last Modified
-        .column(Column::remainder().clip(false)); //Actions
+        .column(Column::remainder().clip(false)); //Last Modified
 
     table = table.sense(egui::Sense::click());
 
@@ -286,9 +243,6 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
             });
             header.col(|ui| {
                 ui.add(egui::Label::new(RichText::new("Last modified").heading()).selectable(false));
-            });
-            header.col(|ui| {
-                ui.add(egui::Label::new(RichText::new("Actions").heading()).selectable(false));
             });
         })
         .body(|mut body| {
@@ -333,12 +287,8 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
                         );
                     });
                     row.col(|ui| {
-                        let creator_string = match &profile.profile_data {
-                            Some(profile_data) => profile_data.creator.clone(),
-                            None => String::new()
-                        };
                         ui.add(
-                            egui::Label::new(creator_string)
+                            egui::Label::new(profile.creator.to_string())
                                 .selectable(false),
                         );
                     });
@@ -347,20 +297,6 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
                             egui::Label::new(profile.last_modified.format("%d/%m/%Y %T").to_string())
                                 .selectable(false),
                         );
-                    });
-                    row.col(|ui| {
-                        ui.vertical(|ui| {
-                            if ui.button("Delete Profile").clicked() {
-                                app.selected_profile_id = Some(profile.id);
-                                handle_profile_delete(app);
-                                app.filter_text.clear();
-                            }
-                            if ui.button("Details").clicked() {
-                                app.selected_profile_id = Some(profile.id);
-                                handle_profile_details(app);
-                                app.filter_text.clear();
-                            }
-                        });
                     });
 
                     if row.response().clicked() {
@@ -378,30 +314,4 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
             }
         });
     app.scroll_to_row = None;
-}
-
-fn handle_profile_delete(app: &mut GsxmanApp) {
-    let file_location = &app.get_selected_profile().unwrap().file_location;
-    if filehandler::delete_config_file(file_location) {
-        app.selected_profile_id = None;
-        app.update_installed_gsx_profiles();
-    }
-}
-
-fn handle_profile_details(app: &mut GsxmanApp) {
-    if let Some(profile) = app.get_selected_profile_mut() {
-        if profile.profile_data.is_none() {
-            filehandler::load_profile_data(profile);
-        }
-
-        if let Some(selected_profile) = app.get_selected_profile() {
-            let zoom_pos = Position::from_lat_lon(
-                selected_profile.airport.location.latitude(),
-                selected_profile.airport.location.longitude(),
-            );
-            map_panel::zoom_map_to_position(app, zoom_pos, 4);
-        }
-
-        app.ui_state = UIState::Details;
-    }
 }

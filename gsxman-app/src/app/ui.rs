@@ -73,9 +73,7 @@ fn filter_profiles(filter_text: &str, profile: &ProfileFile) -> bool {
         || profile.airport.name.to_lowercase().contains(filter_str);
 
     if !should_display {
-        if let Some(profile_data) = profile.profile_data.clone() {
-            should_display = profile_data.creator.to_lowercase().contains(filter_str);
-        }
+        should_display = profile.creator.to_lowercase().contains(filter_str);
     }
 
     should_display

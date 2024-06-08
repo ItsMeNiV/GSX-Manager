@@ -1,4 +1,9 @@
-use std::{collections::HashMap, fs, io, path::{Path, PathBuf}, time::SystemTime};
+use std::{
+    collections::HashMap,
+    fs, io,
+    path::{Path, PathBuf},
+    time::SystemTime,
+};
 
 use geoutils::Location;
 use regex::Regex;
@@ -52,6 +57,7 @@ pub fn get_installed_gsx_profiles(
 
         for path_entry in &entries {
             let file_name = String::from(path_entry.file_name().unwrap().to_str().unwrap());
+
             let mut last_modified = SystemTime::UNIX_EPOCH;
             if let Ok(metadata) = path_entry.metadata() {
                 if let Ok(modified) = metadata.modified() {
@@ -75,12 +81,29 @@ pub fn get_installed_gsx_profiles(
                     warn!("Airport with icao {} not found!", icao_code);
                     continue;
                 };
+
+                let mut creator = String::from("");
+                let parse_result =
+                    gsx_ini_parser::parse_file(path_entry.as_os_str().to_str().unwrap());
+                if let Err(error) = parse_result {
+                    error!("{}", error);
+                } else {
+                    let data_map = parse_result.unwrap();
+    
+                    if let Some(general_section) = data_map.get("general") {
+                        if let Some(creator_string) = general_section.get("creator") {
+                            creator = creator_string.to_owned();
+                        }
+                    }
+                }
+
                 let mut config = ProfileFile::new(
                     file_name,
                     path_entry.clone(),
                     airport.to_owned().clone(),
                     python_file,
-                    last_modified.into()
+                    last_modified.into(),
+                    creator,
                 );
 
                 for (_, profile_file) in installed_config_files.iter_mut() {
@@ -90,8 +113,6 @@ pub fn get_installed_gsx_profiles(
                         config.has_duplicate_error = true;
                     }
                 }
-
-                load_profile_data(&mut config);
 
                 installed_config_files.insert(config.id, config);
             };
@@ -110,15 +131,8 @@ pub fn load_profile_data(file: &mut ProfileFile) {
     let data_map = parse_result.unwrap();
     let mut profile_data = GsxProfile::new();
 
-    if let Some(general_section) = data_map.get("general") {
-        profile_data.creator = {
-            if let Some(creator) = general_section.get("creator") {
-                creator.to_owned()
-            } else {
-                String::from("")
-            }
-        };
-        //TODO: Handle Deice areas as well
+    if let Some(_general_section) = data_map.get("general") {
+        //TODO: Handle Deice areas
     }
 
     for (section_name, values) in data_map.iter() {

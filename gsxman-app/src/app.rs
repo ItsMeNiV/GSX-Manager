@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use eframe::egui;
 use egui::{Context, Style, Vec2, Visuals};
 use uuid::Uuid;
-use walkers::{MapMemory, sources, Tiles};
+use walkers::{sources, MapMemory, Tiles};
 
-use GsxmanCore::{Airport, constants, ProfileFile};
+use GsxmanCore::{constants, Airport, ProfileFile};
 
 use crate::app::ui::UIState;
 use crate::core::{self as GsxmanCore, GsxSection};
@@ -64,13 +64,38 @@ impl GsxmanApp {
             selected_section_id: None,
             scroll_to_row: None,
             ui_state: UIState::Overview,
-            filter_text: String::new()
+            filter_text: String::new(),
         }
     }
 
-    fn update_installed_gsx_profiles(&mut self) {
-        self.installed_gsx_profiles =
+    fn update_installed_gsx_profiles(&mut self, profile_added: bool) {
+        let profiles_in_folder =
             GsxmanCore::filehandler::get_installed_gsx_profiles(&self.airport_data);
+
+        if profile_added {
+            for (id, profile) in profiles_in_folder.iter() {
+                let mut profile_exists = false;
+                for installed_profile in self.installed_gsx_profiles.values().into_iter() {
+                    if installed_profile.file_name == profile.file_name {
+                        profile_exists = true;
+                    }
+                }
+    
+                if !profile_exists {
+                    self.installed_gsx_profiles
+                        .insert(id.clone(), profile.clone());
+                }
+            }
+        } else {
+            self.installed_gsx_profiles.retain(|_, profile| {
+                for profile_in_folder in profiles_in_folder.values().into_iter() {
+                    if profile.file_name == profile_in_folder.file_name {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
     }
 
     fn get_selected_profile(&self) -> Option<&ProfileFile> {

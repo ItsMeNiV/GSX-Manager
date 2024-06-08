@@ -27,7 +27,6 @@ pub struct GsxSection {
 
 #[derive(Debug, Clone)]
 pub struct GsxProfile {
-    pub creator: String,
     pub deice_labels: Vec<String>,
     pub deice_areas: Vec<Position>,
     pub sections: Vec<GsxSection>,
@@ -43,12 +42,12 @@ pub struct ProfileFile {
     pub profile_data: Option<GsxProfile>,
     pub has_duplicate_error: bool,
     pub last_modified: DateTime<Utc>,
+    pub creator: String,
 }
 
 impl GsxProfile {
     pub fn new() -> Self {
         Self {
-            creator: String::from(""),
             deice_labels: vec![],
             deice_areas: vec![],
             sections: vec![],
@@ -62,7 +61,8 @@ impl ProfileFile {
         file_location: PathBuf,
         airport: Airport,
         py_file_location: Option<PathBuf>,
-        last_modified: DateTime<Utc>
+        last_modified: DateTime<Utc>,
+        creator: String
     ) -> ProfileFile {
         ProfileFile {
             id: Uuid::new_v4(),
@@ -73,6 +73,7 @@ impl ProfileFile {
             profile_data: None,
             has_duplicate_error: false,
             last_modified,
+            creator,
         }
     }
 }
