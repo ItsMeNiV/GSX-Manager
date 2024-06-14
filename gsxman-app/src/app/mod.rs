@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use eframe::egui;
 use egui::{Context, Style, Vec2, Visuals};
+use json::JsonValue;
 use uuid::Uuid;
 use walkers::{sources, MapMemory, Tiles};
 
@@ -14,18 +15,12 @@ use self::ui::plugins::ClickWatcher;
 
 mod ui;
 
-/// Configuration of the App, this will be saved locally and loaded on Application start (if available)
-pub struct AppConfig {
-    pub msfs_windowsstore: bool,
-    pub gsx_profile_path: Option<String>,
-}
-
 struct GsxmanApp {
-    _app_config: AppConfig,
     map_memory: MapMemory,
     tiles: Tiles,
     installed_gsx_profiles: HashMap<Uuid, ProfileFile>,
     airport_data: HashMap<String, Airport>,
+    user_data: JsonValue,
     click_watcher: ui::plugins::ClickWatcher,
     selected_profile_id: Option<Uuid>,
     selected_section_id: Option<Uuid>,
@@ -34,27 +29,19 @@ struct GsxmanApp {
     filter_text: String,
 }
 
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            msfs_windowsstore: true,
-            gsx_profile_path: None,
-        }
-    }
-}
-
 impl GsxmanApp {
-    fn new(app_config: AppConfig, egui_ctx: Context) -> Self {
+    fn new(egui_ctx: Context) -> Self {
         let airport_data = GsxmanCore::filehandler::get_airport_data();
         let map_memory = MapMemory::default();
+        let user_data = GsxmanCore::filehandler::get_user_data();
         Self {
-            _app_config: app_config,
             map_memory,
             tiles: Tiles::new(sources::OpenStreetMap, egui_ctx),
             installed_gsx_profiles: GsxmanCore::filehandler::get_installed_gsx_profiles(
                 &airport_data,
             ),
             airport_data,
+            user_data,
             click_watcher: ClickWatcher {
                 places: None,
                 clicked_label: None,
@@ -80,7 +67,7 @@ impl GsxmanApp {
                         profile_exists = true;
                     }
                 }
-    
+
                 if !profile_exists {
                     self.installed_gsx_profiles
                         .insert(id.clone(), profile.clone());
@@ -132,12 +119,12 @@ impl GsxmanApp {
     }
 }
 
-pub fn start_app(app_config: AppConfig) -> Result<(), eframe::Error> {
+pub fn start_app() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size(constants::WINDOW_SIZE)
             .with_icon(
-                eframe::icon_data::from_png_bytes(&include_bytes!("../res/icon.png")[..])
+                eframe::icon_data::from_png_bytes(&include_bytes!("../../res/icon.png")[..])
                     .expect("Failed to load icon"),
             )
             .with_min_inner_size(Vec2::new(1400.0, 500.0)),
@@ -153,7 +140,7 @@ pub fn start_app(app_config: AppConfig) -> Result<(), eframe::Error> {
                 ..Style::default()
             };
             cc.egui_ctx.set_style(style);
-            let mut app = GsxmanApp::new(app_config, cc.egui_ctx.to_owned());
+            let mut app = GsxmanApp::new(cc.egui_ctx.to_owned());
             for _ in 0..12 {
                 app.map_memory.zoom_out().expect("Couldn't zoom out");
             }

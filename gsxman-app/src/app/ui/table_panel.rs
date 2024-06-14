@@ -7,26 +7,42 @@ use crate::app::GsxmanApp;
 use super::{filter_profile_details, filter_profiles, UIState};
 
 pub fn update_table_panel(app: &mut GsxmanApp, ui: &mut Ui) {
-    StripBuilder::new(ui)
-        .size(Size::exact(25.0))
-        .size(Size::remainder())
-        .vertical(|mut strip| {
-            strip.cell(|ui| {
-                ui.horizontal(|ui| {
-                    ui.add(egui::TextEdit::singleline(&mut app.filter_text).hint_text("Filter"));
-                    if ui.button("Clear").clicked() {
-                        app.filter_text.clear();
-                    };
+    if app.ui_state == UIState::Notes {
+        // Notes is a special case because there is no Table, so there's also no need for a Filter
+        let selected_profile = app.get_selected_profile().unwrap();
+        ui.heading(format!(
+            "Notes for {} by {}",
+            selected_profile.file_name, selected_profile.creator
+        ));
+        ui.separator();
+        update_notes(app, ui);
+    } else {
+        StripBuilder::new(ui)
+            .size(Size::exact(25.0))
+            .size(Size::remainder())
+            .vertical(|mut strip| {
+                strip.cell(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.add(
+                            egui::TextEdit::singleline(&mut app.filter_text).hint_text("Filter"),
+                        );
+                        if ui.button("Clear").clicked() {
+                            app.filter_text.clear();
+                        };
+                    });
+                });
+                strip.cell(|ui| {
+                    egui::ScrollArea::horizontal()
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| match app.ui_state {
+                            UIState::Overview => update_overview_table(app, ui),
+                            UIState::Details => update_detail_table(app, ui),
+                            UIState::SectionDetails => update_section_detail_table(app, ui),
+                            _ => (),
+                        });
                 });
             });
-            strip.cell(|ui| {
-                egui::ScrollArea::horizontal().auto_shrink([false, false]).show(ui, |ui| match app.ui_state {
-                    UIState::Overview => update_overview_table(app, ui),
-                    UIState::Details => update_detail_table(app, ui),
-                    UIState::SectionDetails => update_section_detail_table(app, ui),
-                });
-            });
-        });
+    }
 }
 
 fn update_section_detail_table(app: &mut GsxmanApp, ui: &mut Ui) {
@@ -314,4 +330,12 @@ fn update_overview_table(app: &mut GsxmanApp, ui: &mut Ui) {
             }
         });
     app.scroll_to_row = None;
+}
+
+fn update_notes(app: &mut GsxmanApp, ui: &mut Ui) {
+    if let Some(selected_profile) = app.get_selected_profile_mut() {
+        let mut size = ui.available_size();
+        size.x -= 30.0;
+        ui.add_sized(size, egui::TextEdit::multiline(&mut selected_profile.notes));
+    }
 }

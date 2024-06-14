@@ -65,7 +65,6 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
         .with_plugin(&mut app.click_watcher),
     );
 
-    // TODO: Maybe need to rethink how to handle this in case of multiple installed profiles for same airport
     if app.click_watcher.has_clicked {
         if let Some(clicked_label) = &app.click_watcher.clicked_label {
             let filter_text = app.filter_text.clone();
@@ -102,13 +101,15 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                         }
                     }
                 }
-                UIState::SectionDetails => {}
+                UIState::SectionDetails => (),
+                UIState::Notes => ()
             }
         } else {
             match app.ui_state {
                 UIState::Overview => app.selected_profile_id = None,
                 UIState::Details => app.selected_section_id = None,
-                UIState::SectionDetails => {}
+                UIState::SectionDetails => (),
+                UIState::Notes => ()
             }
         }
 
@@ -121,6 +122,7 @@ fn get_places_to_display(app: &mut GsxmanApp) -> Vec<GsxPlace> {
         UIState::Overview => get_airport_places(app),
         UIState::Details => get_airport_detail_places(app),
         UIState::SectionDetails => get_section_detail_places(app),
+        UIState::Notes => get_airport_detail_places(app)
     }
 }
 

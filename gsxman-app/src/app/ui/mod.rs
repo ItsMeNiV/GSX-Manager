@@ -9,10 +9,12 @@ mod menu_bar_panel;
 pub mod plugins;
 mod table_panel;
 
+#[derive(PartialEq)]
 pub enum UIState {
     Overview,
     Details,
     SectionDetails,
+    Notes,
 }
 
 impl eframe::App for GsxmanApp {

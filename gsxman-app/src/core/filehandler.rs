@@ -1,11 +1,13 @@
 use std::{
     collections::HashMap,
-    fs, io,
+    fs::{self, File},
+    io::{self, Read, Write},
     path::{Path, PathBuf},
     time::SystemTime,
 };
 
 use geoutils::Location;
+use json::JsonValue;
 use regex::Regex;
 use tracing::{debug, error, warn};
 use uuid::Uuid;
@@ -38,6 +40,41 @@ pub fn get_airport_data() -> HashMap<String, Airport> {
         return_map.insert(airport_icao, airport);
     });
     return_map
+}
+
+pub fn get_user_data() -> JsonValue {
+    let mut file = match File::options()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open("gsxman_userdata.json")
+    {
+        Ok(f) => f,
+        Err(_) => panic!("Could not create Userdata File!"),
+    };
+    let mut data = String::new();
+    file.read_to_string(&mut data).unwrap();
+
+    if data.is_empty() {
+        data += "{}";
+    }
+    json::parse(data.as_str()).unwrap()
+}
+
+pub fn write_user_data(user_data: &JsonValue) {
+    let mut file = match File::options()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open("gsxman_userdata.json")
+    {
+        Ok(f) => f,
+        Err(_) => panic!("Could not create Userdata File!"),
+    };
+
+    if let Err(_) = file.write(&*user_data.dump().as_bytes()) {
+        panic!("Could not write to Userdata File!");
+    }
 }
 
 pub fn get_installed_gsx_profiles(
@@ -89,7 +126,7 @@ pub fn get_installed_gsx_profiles(
                     error!("{}", error);
                 } else {
                     let data_map = parse_result.unwrap();
-    
+
                     if let Some(general_section) = data_map.get("general") {
                         if let Some(creator_string) = general_section.get("creator") {
                             creator = creator_string.to_owned();
@@ -104,6 +141,7 @@ pub fn get_installed_gsx_profiles(
                     python_file,
                     last_modified.into(),
                     creator,
+                    String::from(""), //TODO
                 );
 
                 for (_, profile_file) in installed_config_files.iter_mut() {

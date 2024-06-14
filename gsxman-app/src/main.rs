@@ -1,6 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use app::AppConfig;
 use tracing::{error, Level};
 use tracing_subscriber::FmtSubscriber;
 
@@ -33,8 +32,7 @@ fn set_logger() {
 fn main() -> Result<(), eframe::Error> {
     set_logger();
 
-    let app_config: AppConfig = Default::default();
-    if let Err(error) = app::start_app(app_config) {
+    if let Err(error) = app::start_app() {
         error!("{}", error.to_string());
     }
 

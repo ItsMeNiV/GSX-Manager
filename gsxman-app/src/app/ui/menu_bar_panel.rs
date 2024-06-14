@@ -26,6 +26,12 @@ pub fn update_menu_bar_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                     handle_profile_details(app);
                     app.filter_text.clear();
                 }
+
+                let selected_profile = app.get_selected_profile();
+                if ui.add_enabled(selected_profile.is_some(), egui::Button::new("Profile Notes")).clicked() {
+                    handle_profile_notes(app);
+                    app.filter_text.clear();
+                }
             }
             UIState::Details => {
                 if ui.button("Back to Overview").clicked() {
@@ -47,6 +53,17 @@ pub fn update_menu_bar_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                 if ui.button("Back to Profile Details").clicked() {
                     app.ui_state = UIState::Details;
                     app.filter_text.clear();
+                }
+            },
+            UIState::Notes => {
+                if ui.button("Back to Overview").clicked() {
+                    app.ui_state = UIState::Overview;
+                    app.filter_text.clear();
+
+                    let selected_profile = app.get_selected_profile().unwrap().clone();
+                    let profile_file_location = selected_profile.file_location.as_os_str().to_str().unwrap();
+                    app.user_data[profile_file_location]["notes"] = selected_profile.notes.into();
+                    filehandler::write_user_data(&app.user_data);
                 }
             }
         };
@@ -88,5 +105,29 @@ fn handle_section_details(app: &mut GsxmanApp) {
         map_panel::zoom_map_to_position(app, zoom_pos, 2);
         
         app.ui_state = UIState::SectionDetails;
+    }
+}
+
+fn handle_profile_notes(app: &mut GsxmanApp) {
+    let user_data = app.user_data.clone();
+    if let Some(profile) = app.get_selected_profile_mut() {
+        if profile.profile_data.is_none() {
+            filehandler::load_profile_data(profile);
+        }
+
+        let profile_file_location = profile.file_location.as_os_str().to_str().unwrap();
+        if user_data[profile_file_location] != json::Null {
+            profile.notes = user_data[profile_file_location]["notes"].to_string();
+        }
+
+        if let Some(selected_profile) = app.get_selected_profile() {
+            let zoom_pos = Position::from_lat_lon(
+                selected_profile.airport.location.latitude(),
+                selected_profile.airport.location.longitude(),
+            );
+            map_panel::zoom_map_to_position(app, zoom_pos, 4);
+        }
+
+        app.ui_state = UIState::Notes;
     }
 }

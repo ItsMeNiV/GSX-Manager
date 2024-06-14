@@ -43,6 +43,7 @@ pub struct ProfileFile {
     pub has_duplicate_error: bool,
     pub last_modified: DateTime<Utc>,
     pub creator: String,
+    pub notes: String,
 }
 
 impl GsxProfile {
@@ -62,7 +63,8 @@ impl ProfileFile {
         airport: Airport,
         py_file_location: Option<PathBuf>,
         last_modified: DateTime<Utc>,
-        creator: String
+        creator: String,
+        notes: String
     ) -> ProfileFile {
         ProfileFile {
             id: Uuid::new_v4(),
@@ -74,6 +76,7 @@ impl ProfileFile {
             has_duplicate_error: false,
             last_modified,
             creator,
+            notes
         }
     }
 }
