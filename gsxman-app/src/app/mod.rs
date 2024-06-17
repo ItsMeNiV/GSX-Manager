@@ -127,7 +127,7 @@ pub fn start_app() -> Result<(), eframe::Error> {
                 eframe::icon_data::from_png_bytes(&include_bytes!("../../res/icon.png")[..])
                     .expect("Failed to load icon"),
             )
-            .with_min_inner_size(Vec2::new(1400.0, 500.0)),
+            .with_min_inner_size(Vec2::new(500.0, 500.0)),
         ..Default::default()
     };
 
