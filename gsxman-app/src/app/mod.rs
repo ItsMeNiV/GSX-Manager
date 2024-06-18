@@ -31,13 +31,13 @@ struct GsxmanApp {
 
 impl GsxmanApp {
     fn new(egui_ctx: Context) -> Self {
-        let airport_data = GsxmanCore::filehandler::get_airport_data();
+        let airport_data = GsxmanCore::filehandling::get_airport_data();
         let map_memory = MapMemory::default();
-        let user_data = GsxmanCore::filehandler::get_user_data();
+        let user_data = GsxmanCore::filehandling::get_user_data();
         Self {
             map_memory,
             tiles: Tiles::new(sources::OpenStreetMap, egui_ctx),
-            installed_gsx_profiles: GsxmanCore::filehandler::get_installed_gsx_profiles(
+            installed_gsx_profiles: GsxmanCore::filehandling::get_installed_gsx_profiles(
                 &airport_data,
             ),
             airport_data,
@@ -57,7 +57,7 @@ impl GsxmanApp {
 
     fn update_installed_gsx_profiles(&mut self, profile_added: bool) {
         let profiles_in_folder =
-            GsxmanCore::filehandler::get_installed_gsx_profiles(&self.airport_data);
+            GsxmanCore::filehandling::get_installed_gsx_profiles(&self.airport_data);
 
         if profile_added {
             for (id, profile) in profiles_in_folder.iter() {

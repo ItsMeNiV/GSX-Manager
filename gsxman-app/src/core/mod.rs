@@ -5,7 +5,7 @@ use geoutils::Location;
 use uuid::Uuid;
 use walkers::{extras::Place, Position};
 
-pub mod filehandler;
+pub mod filehandling;
 
 #[derive(Debug, Clone)]
 pub struct Airport {

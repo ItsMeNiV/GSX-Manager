@@ -1,7 +1,7 @@
 use egui::{menu, Ui};
 use walkers::Position;
 
-use crate::{app::GsxmanApp, core::filehandler};
+use crate::{app::GsxmanApp, core::filehandling};
 use crate::app::ui::UIState;
 
 use super::map_panel;
@@ -11,7 +11,7 @@ pub fn update_menu_bar_panel(app: &mut GsxmanApp, ui: &mut Ui) {
         match app.ui_state {
             UIState::Overview => {
                 if ui.button("Import new Profile").clicked() {
-                    filehandler::import_config_file_dialog();
+                    filehandling::import_profile_file_dialog();
                     app.update_installed_gsx_profiles(true);
                 }
 
@@ -31,6 +31,10 @@ pub fn update_menu_bar_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                 if ui.add_enabled(selected_profile.is_some(), egui::Button::new("Profile Notes")).clicked() {
                     handle_profile_notes(app);
                     app.filter_text.clear();
+                }
+
+                if ui.button("Refresh Profiles").clicked() {
+                    app.update_installed_gsx_profiles(false);
                 }
             }
             UIState::Details => {
@@ -63,7 +67,7 @@ pub fn update_menu_bar_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                     let selected_profile = app.get_selected_profile().unwrap().clone();
                     let profile_file_location = selected_profile.file_location.as_os_str().to_str().unwrap();
                     app.user_data[profile_file_location]["notes"] = selected_profile.notes.into();
-                    filehandler::write_user_data(&app.user_data);
+                    filehandling::write_user_data(&app.user_data);
                 }
             }
         };
@@ -72,7 +76,7 @@ pub fn update_menu_bar_panel(app: &mut GsxmanApp, ui: &mut Ui) {
 
 fn handle_profile_delete(app: &mut GsxmanApp) {
     let file_location = &app.get_selected_profile().unwrap().file_location;
-    if filehandler::delete_config_file(file_location) {
+    if filehandling::delete_profile_file(file_location) {
         app.selected_profile_id = None;
         app.update_installed_gsx_profiles(false);
     }
@@ -81,7 +85,7 @@ fn handle_profile_delete(app: &mut GsxmanApp) {
 fn handle_profile_details(app: &mut GsxmanApp) {
     if let Some(profile) = app.get_selected_profile_mut() {
         if profile.profile_data.is_none() {
-            filehandler::load_profile_data(profile);
+            filehandling::load_profile_data(profile);
         }
 
         if let Some(selected_profile) = app.get_selected_profile() {
@@ -112,7 +116,7 @@ fn handle_profile_notes(app: &mut GsxmanApp) {
     let user_data = app.user_data.clone();
     if let Some(profile) = app.get_selected_profile_mut() {
         if profile.profile_data.is_none() {
-            filehandler::load_profile_data(profile);
+            filehandling::load_profile_data(profile);
         }
 
         let profile_file_location = profile.file_location.as_os_str().to_str().unwrap();

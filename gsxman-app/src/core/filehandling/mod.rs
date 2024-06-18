@@ -1,8 +1,7 @@
 use std::{
     collections::HashMap,
-    error,
     fs::{self, File},
-    io::{self, BufReader, Read, Write},
+    io::{self, Read, Write},
     path::{Path, PathBuf},
     time::SystemTime,
 };
@@ -15,11 +14,14 @@ use uuid::Uuid;
 use walkers::Position;
 
 use gsx_ini_parser;
-use zip::read::ZipFile;
 
 use crate::util;
 
 use super::{Airport, GsxProfile, GsxSection, ProfileFile};
+
+mod profileimporter;
+
+// Required Data Loading
 
 pub fn get_airport_data() -> HashMap<String, Airport> {
     let mut return_map = HashMap::new();
@@ -78,6 +80,8 @@ pub fn write_user_data(user_data: &JsonValue) {
         panic!("Could not write to Userdata File!");
     }
 }
+
+// GSX Profile handling
 
 pub fn get_installed_gsx_profiles(
     airport_data: &HashMap<String, Airport>,
@@ -239,162 +243,19 @@ fn position_string_to_position(string_value: &str) -> Option<Position> {
     Some(pos)
 }
 
-pub fn import_config_file_dialog() {
+pub fn import_profile_file_dialog() {
     if let Some(path) = rfd::FileDialog::new()
         .add_filter("GSX-Profile", &["ini", "zip"])
         .set_directory("/")
         .set_title("Import new Profile")
         .pick_file()
     {
-        if path.extension().unwrap() == "zip" {
-            import_from_zip(path);
-        } else {
-            import_ini(path);
-        }
+        profileimporter::import_from_path(path);
     }
 }
 
-fn import_from_zip(path: PathBuf) {
-    let zip_file_name = path
-        .components()
-        .next_back()
-        .unwrap()
-        .as_os_str()
-        .to_str()
-        .unwrap();
-    let zip_file_name = &zip_file_name[..zip_file_name.len() - 4];
-    let extraction_path = path.parent().unwrap().to_path_buf().join(zip_file_name);
-    match fs::File::open(path) {
-        Ok(file) => {
-            let reader = BufReader::new(file);
-            if let Ok(mut archive) = zip::ZipArchive::new(reader) {
-                let mut ini_files: Vec<String> = vec![];
-                let mut py_files: Vec<String> = vec![];
-                for i in 0..archive.len() {
-                    if let Ok(file) = archive.by_index(i) {
-                        let file_name = file.name();
-                        if file_name.ends_with("ini") {
-                            ini_files.push(file.name().to_owned());
-                        } else if file_name.ends_with("py") {
-                            py_files.push(file.name().to_owned());
-                        }
-                    } else {
-                        error!("Error reading from Zip Archive");
-                    }
-                }
-                let mut search_py_files = false;
-                let mut single_py_file_to_import = false;
-                match py_files.len() {
-                    0 => (),
-                    1 => {
-                        extract_file_from_zip(
-                            archive.by_name(&py_files[0].as_str()).unwrap(),
-                            &extraction_path,
-                        );
-                        search_py_files = false;
-                        single_py_file_to_import = true;
-                    }
-                    _ => {
-                        search_py_files = true;
-                        single_py_file_to_import = false;
-                    },
-                };
-
-                match ini_files.len() {
-                    0 => error!("No ini-Files found in Zip Archive"),
-                    1 => {
-                        let file_name = ini_files[0].as_str();
-                        let outpath_ini: PathBuf = extract_file_from_zip(
-                            archive.by_name(file_name).unwrap(),
-                            &extraction_path,
-                        );
-
-                        let possible_python_file_name =
-                            format!("{}.py", &file_name[..file_name.len() - 4]);
-                        if search_py_files && py_files.contains(&possible_python_file_name) {
-                            extract_file_from_zip(
-                                archive.by_name(&possible_python_file_name).unwrap(),
-                                &extraction_path,
-                            );
-                        }
-
-                        if !outpath_ini.as_os_str().is_empty() {
-                            import_ini(outpath_ini);
-                        }
-                    }
-                    _ => {
-                        for file in &ini_files {
-                            extract_file_from_zip(archive.by_name(file).unwrap(), &extraction_path);
-                        }
-
-                        if let Some(path) = rfd::FileDialog::new()
-                            .add_filter("GSX-Profile", &["ini"])
-                            .set_directory(&extraction_path)
-                            .set_title("Multiple Ini-Files found. Choose which one to import")
-                            .pick_file()
-                        {
-                            // Rename py-file to fit the selected profile
-                            if single_py_file_to_import {
-                                if let Some(py_file_name) = archive.by_name(&py_files[0]).unwrap().enclosed_name() {
-                                    let original_py_file_name = extraction_path.join(py_file_name.components().next_back().unwrap());
-                                    let new_py_file_name = path.as_os_str().to_str().unwrap().replace("ini", "py");
-                                    let _ = fs::rename(original_py_file_name, new_py_file_name);
-                                }
-                            }
-                            import_ini(path);
-                        }
-                    }
-                }
-            } else {
-                error!("Error opening Zip Archive");
-            }
-        }
-        Err(err) => error!("{:?}", err),
-    }
-}
-
-fn extract_file_from_zip(mut file: ZipFile, target_path: &PathBuf) -> PathBuf {
-    if let Some(file_name) = file.enclosed_name() {
-        let outpath = target_path.join(file_name.components().next_back().unwrap());
-        debug!("{:?}", outpath);
-
-        if let Some(p) = outpath.parent() {
-            if !p.exists() {
-                fs::create_dir_all(p).unwrap();
-            }
-        }
-
-        let mut outfile = fs::File::create(&outpath).unwrap();
-        io::copy(&mut file, &mut outfile).unwrap();
-
-        return outpath;
-    };
-
-    PathBuf::new()
-}
-
-fn import_ini(path: PathBuf) {
-    let to_path = util::get_gsx_profile_path().join(path.file_name().unwrap());
-    match fs::copy(&path, to_path) {
-        Ok(_) => {
-            if let Some(python_file) = get_associated_python_file(&path) {
-                let to_path = util::get_gsx_profile_path().join(python_file.file_name().unwrap());
-                match fs::copy(&path, to_path) {
-                    Ok(_) => {}
-                    Err(error) => {
-                        error!("{:?}", error);
-                    }
-                }
-            }
-        }
-        Err(error) => {
-            error!("{:?}", error)
-        }
-    }
-}
-
-pub fn delete_config_file(airport_path_to_delete: &PathBuf) -> bool {
-    let filename = airport_path_to_delete
+pub fn delete_profile_file(profile_path_to_delete: &PathBuf) -> bool {
+    let filename = profile_path_to_delete
         .file_name()
         .unwrap()
         .to_str()
@@ -413,17 +274,17 @@ pub fn delete_config_file(airport_path_to_delete: &PathBuf) -> bool {
         .set_level(rfd::MessageLevel::Warning)
         .show();
     match message_dialog {
-        rfd::MessageDialogResult::Ok => match fs::remove_file(airport_path_to_delete) {
+        rfd::MessageDialogResult::Ok => match fs::remove_file(profile_path_to_delete) {
             Ok(_) => {
                 debug!(
                     "Deleted profile {}",
-                    airport_path_to_delete
+                    profile_path_to_delete
                         .file_name()
                         .unwrap()
                         .to_str()
                         .unwrap()
                 );
-                if let Some(python_file) = get_associated_python_file(airport_path_to_delete) {
+                if let Some(python_file) = get_associated_python_file(profile_path_to_delete) {
                     match fs::remove_file(&python_file) {
                         Ok(_) => {
                             debug!(
