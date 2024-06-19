@@ -10,11 +10,6 @@ pub fn update_menu_bar_panel(app: &mut GsxmanApp, ui: &mut Ui) {
     menu::bar(ui, |ui| {
         match app.ui_state {
             UIState::Overview => {
-                if ui.button("Import new Profile").clicked() {
-                    filehandling::import_profile_file_dialog();
-                    app.update_installed_gsx_profiles(true);
-                }
-
                 let selected_profile = app.get_selected_profile();
                 if ui.add_enabled(selected_profile.is_some(), egui::Button::new("Delete Profile")).clicked() {
                     handle_profile_delete(app);
@@ -33,8 +28,18 @@ pub fn update_menu_bar_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                     app.filter_text.clear();
                 }
 
+                let selected_profile = app.get_selected_profile();
+                if ui.add_enabled(selected_profile.is_some(), egui::Button::new("Show Profile on Map")).clicked() {
+                    handle_show_profile_on_map(app);
+                }
+
                 if ui.button("Refresh Profiles").clicked() {
                     app.update_installed_gsx_profiles(false);
+                }
+                
+                if ui.button("Import new Profile").clicked() {
+                    filehandling::import_profile_file_dialog();
+                    app.update_installed_gsx_profiles(true);
                 }
             }
             UIState::Details => {
@@ -133,5 +138,15 @@ fn handle_profile_notes(app: &mut GsxmanApp) {
         }
 
         app.ui_state = UIState::Notes;
+    }
+}
+
+fn handle_show_profile_on_map(app: &mut GsxmanApp) {
+    if let Some(selected_profile) = app.get_selected_profile() {
+        let zoom_pos = Position::from_lat_lon(
+            selected_profile.airport.location.latitude(),
+            selected_profile.airport.location.longitude(),
+        );
+        map_panel::zoom_map_to_position(app, zoom_pos, 4);
     }
 }
