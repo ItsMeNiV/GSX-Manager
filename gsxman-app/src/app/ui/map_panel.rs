@@ -5,10 +5,13 @@ use walkers::{
     Map, Position, Projector,
 };
 
-use crate::app::ui::UIState;
+use crate::{
+    app::ui::UIState,
+    core::{filehandling, ProfileFile},
+};
 use crate::{app::GsxmanApp, core::GsxPlace};
 
-use super::{filter_profile_details, filter_profiles};
+use super::{filter_profile_details, filter_profiles, plugins::NoteDrawer};
 
 fn handle_scrolling(app: &mut GsxmanApp, ui: &mut Ui) {
     let position = {
@@ -51,6 +54,27 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
 
     let places = Places::new(places);
 
+    let selected_profile = {
+        let mut result: Option<ProfileFile> = None;
+        let user_data = app.user_data.clone();
+        if app.ui_state == UIState::Overview {
+            if let Some(selected_profile) = app.get_selected_profile_mut() {
+                if selected_profile.profile_data.is_none() {
+                    filehandling::load_profile_data(selected_profile);
+                }
+
+                let profile_file_location = selected_profile.file_location.as_os_str().to_str().unwrap();
+                if user_data[profile_file_location] != json::Null {
+                    selected_profile.notes = user_data[profile_file_location]["notes"].to_string();
+                }
+                result = Some(selected_profile.to_owned());
+            }
+        }
+
+        result
+    };
+    let note_drawer = NoteDrawer::new(selected_profile);
+
     // Manual Zoom by Scrolling. Map Library only allows Zooming by holding Ctrl
     handle_scrolling(app, ui);
 
@@ -62,7 +86,8 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
         )
         .zoom_gesture(false)
         .with_plugin(places)
-        .with_plugin(&mut app.click_watcher),
+        .with_plugin(&mut app.click_watcher)
+        .with_plugin(note_drawer),
     );
 
     if app.click_watcher.has_clicked {
@@ -74,7 +99,8 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                         .installed_gsx_profiles
                         .iter()
                         .sorted_by(|a, b| Ord::cmp(&a.1.airport.icao, &b.1.airport.icao))
-                        .filter(|&(_, profile)| filter_profiles(&filter_text, profile)).enumerate()
+                        .filter(|&(_, profile)| filter_profiles(&filter_text, profile))
+                        .enumerate()
                     {
                         if *clicked_label == profile.airport.icao {
                             app.selected_profile_id = Some(profile.id);
@@ -90,7 +116,8 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                                 .sections
                                 .iter()
                                 .sorted_by(|a, b| Ord::cmp(&a.name, &b.name))
-                                .filter(|&section| filter_profile_details(&filter_text, section)).enumerate()
+                                .filter(|&section| filter_profile_details(&filter_text, section))
+                                .enumerate()
                             {
                                 if *clicked_label == section.name {
                                     app.selected_section_id = Some(section.id);
@@ -102,14 +129,14 @@ pub fn update_map_panel(app: &mut GsxmanApp, ui: &mut Ui) {
                     }
                 }
                 UIState::SectionDetails => (),
-                UIState::Notes => ()
+                UIState::Notes => (),
             }
         } else {
             match app.ui_state {
                 UIState::Overview => app.selected_profile_id = None,
                 UIState::Details => app.selected_section_id = None,
                 UIState::SectionDetails => (),
-                UIState::Notes => ()
+                UIState::Notes => (),
             }
         }
 
@@ -122,7 +149,7 @@ fn get_places_to_display(app: &mut GsxmanApp) -> Vec<GsxPlace> {
         UIState::Overview => get_airport_places(app),
         UIState::Details => get_airport_detail_places(app),
         UIState::SectionDetails => get_section_detail_places(app),
-        UIState::Notes => get_airport_detail_places(app)
+        UIState::Notes => get_airport_detail_places(app),
     }
 }
 
