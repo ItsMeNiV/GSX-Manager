@@ -245,7 +245,7 @@ fn position_string_to_position(string_value: &str) -> Option<Position> {
 
 pub fn import_profile_file_dialog() {
     if let Some(path) = rfd::FileDialog::new()
-        .add_filter("GSX-Profile", &["ini", "zip"])
+        .add_filter("GSX-Profile", &["ini", "zip", "rar"])
         .set_directory("/")
         .set_title("Import new Profile")
         .pick_file()
